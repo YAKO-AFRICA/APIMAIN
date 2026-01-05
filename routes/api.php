@@ -4,8 +4,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\TypeOperationController;
+use App\Http\Controllers\Pret\SimulateurPrimeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +50,47 @@ Route::prefix('rapports')->group(function () {
 
     Route::post('/synthese/data', [RapportController::class, 'rapportSynthese']);
 });
+
+Route::prefix('caisse')->group(function () {
+    Route::get('/get', [CaisseController::class, 'index']);
+    Route::post('/store', [CaisseController::class, 'store']);
+    Route::post('/update/{uuid}', [CaisseController::class, 'update']);
+    Route::post('/destroy/{uuid}', [CaisseController::class, 'destroy']);
+    Route::post('/restore/{uuid}', [CaisseController::class, 'restore']);
+});
+
+// api calcule de prime cotation pret
+Route::post('/simulateur/prime/pret', [SimulateurPrimeController::class, 'simulatePrime']);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Auth Controller routes can be added here in the future
 

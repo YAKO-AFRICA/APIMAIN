@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ApiController;
+use App\Http\Controllers\Bni\BniController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\RapportController;
@@ -61,6 +62,8 @@ Route::prefix('caisse')->group(function () {
 
 // api calcule de prime cotation pret
 Route::post('/simulateur/prime/pret', [SimulateurPrimeController::class, 'simulatePrime']);
+
+Route::post('/adherent-bni', [BniController::class, 'getAdherent']);
 
 
 

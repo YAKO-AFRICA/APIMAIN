@@ -1,14 +1,15 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ApiController;
-use App\Http\Controllers\Bni\BniController;
-use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Api\CaisseController;
+use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\TypeOperationController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Bni\BniController;
 use App\Http\Controllers\Pret\SimulateurPrimeController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,6 +59,13 @@ Route::prefix('caisse')->group(function () {
     Route::post('/update/{uuid}', [CaisseController::class, 'update']);
     Route::post('/destroy/{uuid}', [CaisseController::class, 'destroy']);
     Route::post('/restore/{uuid}', [CaisseController::class, 'restore']);
+});
+Route::prefix('operateur')->group(function () {
+    Route::get('/get', [OperateurController::class, 'index']);
+    Route::post('/store', [OperateurController::class, 'store']);
+    Route::post('/update/{uuid}', [OperateurController::class, 'update']);
+    Route::post('/destroy/{uuid}', [OperateurController::class, 'destroy']);
+    Route::post('/restore/{uuid}', [OperateurController::class, 'restore']);
 });
 
 // api calcule de prime cotation pret

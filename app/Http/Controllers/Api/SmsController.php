@@ -16,6 +16,8 @@ class SmsController extends Controller
     public function __construct(SMSService $SMSService)
     {
         $this->SMSService = $SMSService;
+
+        
     }
     public function sendSms(Request $request)
     {
@@ -25,6 +27,7 @@ class SmsController extends Controller
             $phone = preg_replace('/\D/', '', $request->phone);
             $phone = substr($phone, -10);
             $phoneNumber = '+225' . $phone;
+            
             $dataMessage = $request->message;
             $response = $this->SMSService->sendSmsByInfobipAPI($phoneNumber, $dataMessage);
             

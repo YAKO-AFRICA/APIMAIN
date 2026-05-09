@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\RapportController;
+use App\Http\Controllers\Api\SouscriptionController;
 use App\Http\Controllers\Api\TypeOperationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bni\BniController;
@@ -66,6 +67,9 @@ Route::prefix('operateur')->group(function () {
     Route::post('/update/{uuid}', [OperateurController::class, 'update']);
     Route::post('/destroy/{uuid}', [OperateurController::class, 'destroy']);
     Route::post('/restore/{uuid}', [OperateurController::class, 'restore']);
+});
+Route::prefix('souscription')->group(function () {
+    Route::get('/calculHomeData', [SouscriptionController::class, 'calculHomeData']);
 });
 
 // api calcule de prime cotation pret

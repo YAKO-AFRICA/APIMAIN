@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\RapportController;
+use App\Http\Controllers\Api\SmsController;
 use App\Http\Controllers\Api\SouscriptionController;
 use App\Http\Controllers\Api\TypeOperationController;
 use App\Http\Controllers\Auth\AuthController;
@@ -76,6 +77,9 @@ Route::prefix('souscription')->group(function () {
 Route::post('/simulateur/prime/pret', [SimulateurPrimeController::class, 'simulatePrime']);
 
 Route::post('/adherent-bni', [BniController::class, 'getAdherent']);
+
+// endpoint envoie sms
+Route::post('/send-sms', [SmsController::class, 'sendSms']);
 
 
 

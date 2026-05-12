@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contrat;
+use App\Models\TblReseauProduct;
 use Illuminate\Http\Request;
 
 class SouscriptionController extends Controller
 {
-    public function calculHomeData()
+    public function calculHomeData($idmembre)
     {
-        $userId = auth()->user()->idmembre;
+        $userId = $idmembre;
         $year = now()->year;
 
         $contratsYear = Contrat::where('saisiepar', $userId)
@@ -147,6 +148,7 @@ class SouscriptionController extends Controller
             ->get();
 
         return response()->json([
+            'idmembre' => $userId,
             'contratsYear' => $counts->total,
             'transmisActifYear' => $counts->transmis_actif,
             'transmisYear' => $contratsTransmisYear,
@@ -174,4 +176,10 @@ class SouscriptionController extends Controller
             ],
         ]);
     }
+
+    
+
+
 }
+
+

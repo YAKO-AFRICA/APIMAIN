@@ -69,9 +69,6 @@ Route::prefix('operateur')->group(function () {
     Route::post('/destroy/{uuid}', [OperateurController::class, 'destroy']);
     Route::post('/restore/{uuid}', [OperateurController::class, 'restore']);
 });
-Route::prefix('souscription')->group(function () {
-    Route::get('/calculHomeData', [SouscriptionController::class, 'calculHomeData']);
-});
 
 // api calcule de prime cotation pret
 Route::post('/simulateur/prime/pret', [SimulateurPrimeController::class, 'simulatePrime']);
@@ -80,6 +77,16 @@ Route::post('/adherent-bni', [BniController::class, 'getAdherent']);
 
 // endpoint envoie sms
 Route::post('/send-sms', [SmsController::class, 'sendSms']);
+
+// endpoint module de souscription
+Route::prefix('souscription')->group(function () {
+    Route::get('/calculHomeData/{idmembre}', [SouscriptionController::class, 'calculHomeData']);
+});
+
+// route api general || paramettre de souscription
+Route::prefix('param')->group(function () {
+    Route::post('/getProduitsByReseau', [ApiController::class, 'getProduitsByReseau']);
+});
 
 
 

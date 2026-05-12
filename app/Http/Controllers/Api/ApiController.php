@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Models\TblReseauProduct;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class ApiController extends Controller
 {
@@ -85,7 +86,7 @@ class ApiController extends Controller
 
             // Vérifier si l'email existe
             $user = User::where('email', $email)->with('membre', 'role')->first();
-            
+
 
             if (!$user) {
                 return response()->json([
@@ -129,35 +130,50 @@ class ApiController extends Controller
         }
     }
 
-    public function productByReseau($codeReseau)
+    public function getProduitsByReseau(Request $request)
     {
-        DB::BeginTransaction();
         try {
+            // Récupérer le codereseau depuis les paramètres de la requête
+            $codereseau = $request->input('codereseau');
 
-            $productByReseau = ReseauProduct::select('CodeProduit')->where('codereseau', $codeReseau)->get();
+            // Vérifier si le code réseau est fourni
+            if (!$codereseau) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le paramètre codereseau est requis'
+                ], 400);
+            }
 
-            $codeProduits = $productByReseau->pluck('CodeProduit')->toArray();
+            // Récupérer les produits actifs pour ce réseau
+            $produitsByReseau = TblReseauProduct::where('codereseau', $codereseau)
+                ->where('estactif', 1)
+                ->get();
 
-            $products = Product::whereIn('CodeProduit', $codeProduits)->get();
-            
-
-            return response()->json(
-                [
-                    'status' => 200,
+            if ($produitsByReseau->isEmpty()) {
+                return response()->json([
                     'success' => true,
-                    'Nbre product Trouve' => count($products),
-                    'message' => 'Liste des produits du reseau '.$codeReseau,
-                    'data' => $products,
-                ]
-            );
+                    'data' => [],
+                    'message' => 'Aucun produit trouvé pour ce code réseau'
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $produitsByReseau,
+                'total' => $produitsByReseau->count(),
+                'codereseau' => $codereseau
+            ]);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue: ' . $e->getMessage()
+            ], 500);
         }
     }
 
 
 
-    
+
 
 }

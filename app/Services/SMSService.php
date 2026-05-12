@@ -29,7 +29,8 @@ class SMSService
     {
         $from="YAKO AFRICA";
         $url = "https://wp2e3q.api.infobip.com/sms/2/text/advanced";
-        $cleApi = "ca9b1e97d87d27dc425b2d598aa83c46-cbbd83f5-f0af-49ae-9bc0-02ba090ecac3";
+        // $cleApi = "ca9b1e97d87d27dc425b2d598aa83c46-cbbd83f5-f0af-49ae-9bc0-02ba090ecac3";
+        $cleApi = "42a73a40893a546f20d2adc036051e1a-4c518f48-d669-42c3-ae7e-5dcf56cd878b";
         $headers = [
                     'Authorization' => "App $cleApi",
                     'Content-Type' => 'application/json',

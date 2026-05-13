@@ -21,6 +21,15 @@ return [
         'scheme' => 'https',
     ],
 
+    'yvon' => [
+        // URL interne (serveur à serveur, sécurisé)
+        'url'        => env('YVON_API_URL',      'https://yvon.yakoafricassur.com'),
+        // URL publique exposée au widget et aux apps mobiles
+        'public_url' => env('YVON_PUBLIC_URL',   'https://apimain.yakoafricassur.com'),
+        'username'   => env('YVON_API_USER',     'demo'),
+        'password'   => env('YVON_API_PASSWORD', 'yako2024'),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

@@ -205,6 +205,8 @@ class YvonService
     // ── Santé ───────────────────────────────────────────────
     public function health(): array
     {
+        $url = $this->baseUrl . '/health';
+        dd($url);
         return Http::timeout(5)->get($this->baseUrl . '/health')->json();
     }
  

@@ -92,15 +92,16 @@ Route::prefix('param')->group(function () {
 
 
 
-// Route::prefix('yvon')->middleware('auth:sanctum')->group(function () {
-//     Route::post('/chat',           [YvonController::class, 'chat']);
-//     Route::post('/voice',          [YvonController::class, 'voiceChat']);
-//     Route::get('/static/widget.js',[YvonController::class, 'YvonWidget']);
-//     Route::delete('/session/{id}', [YvonController::class, 'deleteSession']);
-// });
 
-// // Santé YVON — accessible sans auth (monitoring)
-// Route::get('/yvon/health', [YvonController::class, 'health']);
+// ============================================================
+//  routes/api.php — Routes YVON complètes
+//  Serveur EX2 : apimain.yakoafricassur.com
+//
+//  DEUX MODES D'ACCÈS :
+//  1. /api/yvon/*        → Protégé Sanctum (espace client connecté)
+//  2. /widget/yvon/*     → Public avec rate-limit (widget externe)
+//  3. /static/*          → Fichiers widget.js et yvon.png
+// ============================================================
 
 
 // ── 1. Routes protégées Sanctum (utilisateurs connectés) ─────

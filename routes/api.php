@@ -5,7 +5,10 @@ use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\SmsController;
+use App\Http\Controllers\Api\SouscriptionController;
 use App\Http\Controllers\Api\TypeOperationController;
+use App\Http\Controllers\Api\YvonController;
+use App\Http\Controllers\Api\YvonWidgetController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bni\BniController;
 use App\Http\Controllers\Pret\SimulateurPrimeController;
@@ -74,8 +77,58 @@ Route::post('/simulateur/prime/pret', [SimulateurPrimeController::class, 'simula
 
 Route::post('/adherent-bni', [BniController::class, 'getAdherent']);
 
-// endpoint envoie sms 
+// endpoint envoie sms
 Route::post('/send-sms', [SmsController::class, 'sendSms']);
+
+// endpoint module de souscription
+Route::prefix('souscription')->group(function () {
+    Route::get('/calculHomeData/{idmembre}', [SouscriptionController::class, 'calculHomeData']);
+});
+
+// route api general || paramettre de souscription
+Route::prefix('param')->group(function () {
+    Route::post('/getProduitsByReseau', [ApiController::class, 'getProduitsByReseau']);
+});
+
+
+
+
+// ============================================================
+//  routes/api.php — Routes YVON complètes
+//  Serveur EX2 : apimain.yakoafricassur.com
+//
+//  DEUX MODES D'ACCÈS :
+//  1. /api/yvon/*        → Protégé Sanctum (espace client connecté)
+//  2. /widget/yvon/*     → Public avec rate-limit (widget externe)
+//  3. /static/*          → Fichiers widget.js et yvon.png
+// ============================================================
+
+
+// ── 1. Routes protégées Sanctum (utilisateurs connectés) ─────
+Route::prefix('yvon')->middleware('auth:sanctum')->group(function () {
+    Route::post('/chat',           [YvonController::class, 'chat']);
+    Route::post('/voice',          [YvonController::class, 'voiceChat']);
+    Route::delete('/session/{id}', [YvonController::class, 'deleteSession']);
+});
+ 
+// ── 2. Routes widget public (rate-limit 60 req/min/IP) ───────
+//    Utilisées par widget.js intégré sur sites externes
+//    et par les applications mobiles
+Route::prefix('widget/yvon')->middleware('throttle:60,1')->group(function () {
+    Route::post('/auth',           [YvonWidgetController::class, 'getPublicToken']);
+    Route::post('/chat',           [YvonWidgetController::class, 'chat']);
+    Route::post('/voice',          [YvonWidgetController::class, 'voiceChat']);
+    Route::delete('/session/{id}', [YvonWidgetController::class, 'deleteSession']);
+});
+ 
+// ── 3. Routes publiques sans auth ────────────────────────────
+Route::get('/yvon/health',    [YvonController::class, 'health']);
+Route::get('/yvon/languages', [YvonController::class, 'languages']);
+ 
+// ── 4. Servir le widget.js et l'icône depuis Laravel ─────────
+//    Permet : <script src="https://apimain.yakoafricassur.com/static/widget.js">
+Route::get('/static/widget.js', [YvonWidgetController::class, 'serveWidget']);
+Route::get('/static/yvon.png',  [YvonWidgetController::class, 'serveIcon']);
 
 
 

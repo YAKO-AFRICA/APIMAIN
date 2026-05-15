@@ -10,100 +10,286 @@ use Laravel\Sanctum\Http\Controllers\CsrfCookieController;
 
 class AuthController extends Controller
 {
-    // 1. Obtenir le cookie CSRF pour Sanctum
-    public function getCsrfCookie(Request $request)
+    // Connexion améliorée
+    public function login(LoginRequest $request)
     {
-        // La méthode CsrfCookieController::__invoke gère l'envoi du cookie
-        return (new CsrfCookieController())($request);
-    }
+        DB::beginTransaction();
 
-    // 2. Connexion
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        try {
+            $user = User::where('email', $request->email)
+                        ->with('membre', 'role')
+                        ->first();
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            // Laravel gère déjà le taux de tentatives échouées via le middleware 'throttle:3,2'
-            // Si le taux est dépassé, une exception est lancée avant d'atteindre ce code.
-            // Sinon, on retourne l'erreur standard de connexion.
-            throw ValidationException::withMessages([
-                'email' => ['Les informations d\'identification sont incorrectes.'],
-            ]);
+            // Vérifier si l'utilisateur existe
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Email inconnu dans notre système',
+                    'success' => false,
+                    'status' => 400
+                ], 400);
+            }
+
+            // Vérifier si le compte est actif
+            if (!$user->is_active) {
+                return response()->json([
+                    'message' => 'Votre compte a été désactivé. Contactez l\'administrateur.',
+                    'success' => false,
+                    'status' => 403
+                ], 403);
+            }
+
+            // Vérifier si le compte est verrouillé
+            if ($user->isLocked()) {
+                $remainingMinutes = now()->diffInMinutes($user->locked_until);
+                return response()->json([
+                    'message' => "Compte verrouillé. Réessayez dans {$remainingMinutes} minutes",
+                    'success' => false,
+                    'status' => 423
+                ], 423);
+            }
+
+            // Vérifier le mot de passe
+            if (!Hash::check($request->password, $user->password)) {
+                $user->incrementLoginAttempts();
+
+                $remainingAttempts = 5 - $user->login_attempts;
+                return response()->json([
+                    'message' => "Mot de passe incorrect. Il vous reste {$remainingAttempts} tentative(s)",
+                    'success' => false,
+                    'status' => 400
+                ], 400);
+            }
+
+            // Réinitialiser les tentatives après connexion réussie
+            $user->resetLoginAttempts();
+
+            // Générer token d'API (Sanctum)
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            $allNotifications = $user->notifications;
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Utilisateur connecté avec succès',
+                'success' => true,
+                'status' => 200,
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'all_notifications' => $allNotifications
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Login error: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Une erreur est survenue lors de la connexion',
+                'success' => false,
+                'status' => 500
+            ], 500);
         }
-
-        // Récupère l'utilisateur et génère un token si nécessaire (pour les requêtes API après la première connexion)
-        $request->session()->regenerate();
-
-        return response()->json([
-            'message' => 'Connexion réussie',
-            'user' => $request->user(),
-        ]);
     }
 
-    // 3. Déconnexion
+    // Demande de réinitialisation de mot de passe
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        try {
+            $user = User::where('email', $request->email)->first();
+
+            // Générer token unique
+            $token = Str::random(64);
+            $expiresAt = now()->addHours(24);
+
+            // Stocker le token
+            DB::table('password_resets')->updateOrInsert(
+                ['email' => $user->email],
+                [
+                    'token' => Hash::make($token),
+                    'expires_at' => $expiresAt,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]
+            );
+
+            // Générer URL de réinitialisation
+            $resetUrl = config('app.frontend_url') . "/reset-password?token={$token}&email={$user->email}";
+
+            // Envoyer l'email (à implémenter)
+            // $this->sendResetPasswordEmail($user, $resetUrl);
+
+            // En environnement de développement, retourner le token
+            if (env('APP_ENV') === 'local') {
+                return response()->json([
+                    'message' => 'Email de réinitialisation envoyé',
+                    'reset_token' => $token, // Seulement en dev
+                    'reset_url' => $resetUrl, // Seulement en dev
+                    'success' => true,
+                    'status' => 200
+                ], 200);
+            }
+
+            return response()->json([
+                'message' => 'Un email de réinitialisation a été envoyé à votre adresse',
+                'success' => true,
+                'status' => 200
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Forgot password error: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Impossible d\'envoyer l\'email de réinitialisation',
+                'success' => false,
+                'status' => 500
+            ], 500);
+        }
+    }
+
+    // Réinitialisation du mot de passe
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            // Vérifier le token
+            $resetRecord = DB::table('password_resets')
+                ->where('email', $request->email)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (!$resetRecord) {
+                return response()->json([
+                    'message' => 'Token invalide ou expiré',
+                    'success' => false,
+                    'status' => 400
+                ], 400);
+            }
+
+            // Vérifier que le token correspond
+            if (!Hash::check($request->token, $resetRecord->token)) {
+                return response()->json([
+                    'message' => 'Token invalide',
+                    'success' => false,
+                    'status' => 400
+                ], 400);
+            }
+
+            // Mettre à jour le mot de passe
+            $user = User::where('email', $request->email)->first();
+            $user->password = Hash::make($request->password);
+            $user->login_attempts = 0;
+            $user->locked_until = null;
+            $user->save();
+
+            // Supprimer le token utilisé
+            DB::table('password_resets')->where('email', $request->email)->delete();
+
+            // Supprimer tous les tokens de l'utilisateur (déconnexion de tous les appareils)
+            $user->tokens()->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Mot de passe réinitialisé avec succès',
+                'success' => true,
+                'status' => 200
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Reset password error: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Impossible de réinitialiser le mot de passe',
+                'success' => false,
+                'status' => 500
+            ], 500);
+        }
+    }
+
+    // Déconnexion
     public function logout(Request $request)
     {
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        try {
+            // Révoquer le token actuel
+            $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Déconnexion réussie']);
-    }
-
-    // 4. Mot de passe oublié (Demande de lien)
-    public function forgotPassword(Request $request)
-    {
-        $request->validate(['email' => 'required|email']);
-
-        // La logique complète de réinitialisation est déjà dans Laravel.
-        // Utilisez l'API de Laravel pour l'envoi de l'email.
-        // Assurez-vous que l'envoi d'e-mails est configuré dans .env
-
-        // Logique simplifiée :
-        $status = $this->broker()->sendResetLink(
-            $request->only('email')
-        );
-
-        if ($status == \Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Lien de réinitialisation envoyé par email.'], 200);
+            return response()->json([
+                'message' => 'Déconnexion réussie',
+                'success' => true,
+                'status' => 200
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors de la déconnexion',
+                'success' => false,
+                'status' => 500
+            ], 500);
         }
-
-        return response()->json(['email' => [trans($status)]], 422);
     }
 
-    // 5. Réinitialisation effective
-    public function resetPassword(Request $request)
+    // Vérifier le token et récupérer l'utilisateur
+    public function checkUser(Request $request)
+    {
+        try {
+            $user = $request->user()->load('membre', 'role');
+
+            return response()->json([
+                'user' => $user,
+                'is_authenticated' => true,
+                'success' => true,
+                'status' => 200
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Non authentifié',
+                'success' => false,
+                'status' => 401
+            ], 401);
+        }
+    }
+
+    // Inscription (optionnel)
+    public function register(Request $request)
     {
         $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|confirmed|min:8',
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
-        // Utiliser la façade Password::
-        $status = $this->broker()->reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill([
-                    'password' => bcrypt($password),
-                ])->setRememberToken(null)->save();
-            }
-        );
+        DB::beginTransaction();
 
-        if ($status == \Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'Mot de passe réinitialisé avec succès.'], 200);
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Compte créé avec succès',
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'success' => true,
+                'status' => 201
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Erreur lors de la création du compte',
+                'success' => false,
+                'status' => 500
+            ], 500);
         }
-
-        return response()->json(['email' => [trans($status)]], 422);
-    }
-
-    // Aide pour accéder au "Password Broker" de Laravel
-    protected function broker()
-    {
-        return \Password::broker();
     }
 }
 

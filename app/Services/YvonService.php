@@ -262,6 +262,7 @@ class YvonService
         $this->password = config('services.yvon.password');
     }
  
+    
     // ── Authentification avec cache 2h ──────────────────────
     public function getToken(): string
     {
@@ -302,6 +303,7 @@ class YvonService
         });
     }
  
+
     // ── Upload audio (WAV/WebM) ─────────────────────────────
     public function voiceUpload(
         string  $audioPath,

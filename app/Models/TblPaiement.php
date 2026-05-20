@@ -9,6 +9,8 @@ class TblPaiement extends Model
 {
     use HasFactory;
     public $connection = 'mysql3';
+    public $timestamps = false;
+    public $primaryKey = 'idPaiment';
     protected $table = 'tblpaiement';
     protected $fillable = [
         'idPaiment',

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\OperateurController;
+use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\SmsController;
 use App\Http\Controllers\Api\SouscriptionController;
@@ -88,6 +89,11 @@ Route::prefix('souscription')->group(function () {
 // route api general || paramettre de souscription
 Route::prefix('param')->group(function () {
     Route::post('/getProduitsByReseau', [ApiController::class, 'getProduitsByReseau']);
+});
+
+
+Route::prefix('paiement')->group(function () {
+    Route::post('/save-paiement-om-callback', [PaiementController::class, 'savePaiementOM']);
 });
 
 

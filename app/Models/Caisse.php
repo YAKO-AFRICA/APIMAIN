@@ -9,9 +9,9 @@ class Caisse extends Model
 {
     use HasFactory;
 
+    protected $connection = 'mysql2';
     protected $table = 'caisses';
 
-    protected $connection = 'mysql2';
 
     protected $fillable = [
         'uuid',
@@ -20,6 +20,9 @@ class Caisse extends Model
         'type',
         'solde',
         'solde_alert',
+        'solde_theorique',
+        'solde_physique',
+        'last_transaction_at',
         'description',
         'isActive',
         'created_by',

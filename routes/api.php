@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\CaisseController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\SmsController;
 use App\Http\Controllers\Api\SouscriptionController;
+use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\TypeOperationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bni\BniController;
@@ -55,6 +57,14 @@ Route::prefix('rapports')->group(function () {
     Route::post('/synthese/data', [RapportController::class, 'rapportSynthese']);
 });
 
+
+Route::prefix('dashboard')->group(function () {
+    Route::get('/stats', [DashboardController::class, 'getStats']);
+    Route::get('/transactions-by-period', [DashboardController::class, 'getTransactionsByPeriod']);
+    Route::get('/top-operators', [DashboardController::class, 'getTopOperators']);
+    Route::get('/transactions-by-type', [DashboardController::class, 'getTransactionsByType']);
+});
+
 Route::prefix('caisse')->group(function () {
     Route::get('/get', [CaisseController::class, 'index']);
     Route::post('/store', [CaisseController::class, 'store']);
@@ -68,6 +78,15 @@ Route::prefix('operateur')->group(function () {
     Route::post('/update/{uuid}', [OperateurController::class, 'update']);
     Route::post('/destroy/{uuid}', [OperateurController::class, 'destroy']);
     Route::post('/restore/{uuid}', [OperateurController::class, 'restore']);
+});
+
+Route::prefix('transactions')->group(function () {
+    Route::get('/get', [TransactionController::class, 'index']);
+    Route::get('/statistiques', [TransactionController::class, 'statistiques']);
+    Route::post('/depot-mobile-money', [TransactionController::class, 'depotMobileMoney']);
+    Route::post('/retrait-mobile-money', [TransactionController::class, 'retraitMobileMoney']);
+    Route::post('/operation-mto', [TransactionController::class, 'operationMTO']);
+    Route::post('/annuler/{uuid}', [TransactionController::class, 'annuler']);
 });
 
 // api calcule de prime cotation pret

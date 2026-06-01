@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'info_bip_api_key' => env('INFOBIP_API_KEY', 'b16ee3ba1ca448e8b81ecdd93f80ccce-1e6a09a1-4ee9-4e44-bb4c-fec55fe5e892'),
+    'info_bip_api_key' => env('INFOBIP_API_KEY'),
 
     'mailgun' => [
         'domain' => env('MAILGUN_DOMAIN'),

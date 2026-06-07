@@ -264,45 +264,78 @@ class TransactionController extends Controller
     }
 
     // Opération MTO (Money Transfer Operator)
+
     public function operationMTO(Request $request)
     {
+
+    Log::info($request->all());
         $validator = Validator::make($request->all(), [
             'caisse_uuid' => 'required|exists:caisses,uuid',
             'operator_uuid' => 'required|exists:operators,uuid',
             'type' => 'required|in:ENVOI_MTO,RETRAIT_MTO',
-            'montant' => 'required|numeric|min:100',
-            'beneficiaire_nom' => 'required_if:type,ENVOI_MTO|string',
-            'beneficiaire_telephone' => 'required_if:type,ENVOI_MTO|string',
+            'montant' => 'required|numeric|min:1000',
+            // Champs pour l'expéditeur/client
+            'client_nom' => 'required|string|min:2',
+            'client_prenom' => 'required|string|min:2',
+            'numero_telephone' => 'required|string|regex:/^[0-9]{9,13}$/',
+            // Champs pour le bénéficiaire (obligatoires pour ENVOI_MTO)
+            'beneficiaire_nom' => 'required_if:type,ENVOI_MTO|string|min:2',
+            'beneficiaire_telephone' => 'required_if:type,ENVOI_MTO|string|regex:/^[0-9]{9,13}$/',
             'beneficiaire_pays' => 'required_if:type,ENVOI_MTO|string',
-            'reference_transaction' => 'nullable|string'
+            // Champs optionnels
+            'reference_transaction' => 'nullable|string',
+            'notes' => 'nullable|string'
+        ], [
+            'client_nom.required' => 'Le nom du client est requis',
+            'client_prenom.required' => 'Le prénom du client est requis',
+            'numero_telephone.required' => 'Le numéro de téléphone est requis',
+            'numero_telephone.regex' => 'Le numéro de téléphone doit contenir 9 à 13 chiffres',
+            'beneficiaire_nom.required_if' => 'Le nom du bénéficiaire est requis pour un envoi',
+            'beneficiaire_telephone.required_if' => 'Le téléphone du bénéficiaire est requis pour un envoi',
+            'beneficiaire_pays.required_if' => 'Le pays du bénéficiaire est requis pour un envoi',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        // if ($validator->fails()) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'errors' => $validator->errors()
+        //     ], 422);
+        // }
 
         try {
             DB::connection('mysql2')->beginTransaction();
 
+            // Vérifier si la caisse existe et est active
             $caisse = Caisse::where('uuid', $request->caisse_uuid)->first();
-            $sens = $request->type === 'ENVOI_MTO' ? 'SORTIE' : 'ENTREE';
 
-            // Pour un envoi, vérifier le solde
-            if ($sens === 'SORTIE' && $caisse->solde_theorique < $request->montant) {
+            if (!$caisse || !$caisse->isActive) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Solde insuffisant'
+                    'message' => 'Caisse inactive ou inexistante'
                 ], 400);
             }
 
-            // Frais MTO (exemple: 2%)
+            $sens = $request->type === 'ENVOI_MTO' ? 'SORTIE' : 'ENTREE';
+            
+            // Calcul des frais MTO (2% du montant)
             $frais = $request->montant * 0.02;
             $montant_total = $request->montant + $frais;
 
-            $transaction = Transaction::create([
+            // Pour un envoi, vérifier le solde
+            if ($sens === 'SORTIE' && $caisse->solde_theorique < $montant_total) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solde insuffisant',
+                    'solde_disponible' => $caisse->solde_theorique,
+                    'montant_demande' => $montant_total
+                ], 400);
+            }
+
+            // Nom complet du client (expéditeur)
+            $clientNomComplet = trim($request->client_nom) . ' ' . trim($request->client_prenom);
+
+            // Préparer les données de la transaction
+            $transactionData = [
                 'type' => $request->type,
                 'sens' => $sens,
                 'montant' => $request->montant,
@@ -311,27 +344,52 @@ class TransactionController extends Controller
                 'caisse_uuid' => $request->caisse_uuid,
                 'operator_uuid' => $request->operator_uuid,
                 'user_uuid' => $request->user_uuid,
-                'beneficiaire_nom' => $request->beneficiaire_nom,
-                'beneficiaire_telephone' => $request->beneficiaire_telephone,
-                'beneficiaire_pays' => $request->beneficiaire_pays,
+                'numero_telephone' => $request->numero_telephone,
                 'reference_transaction' => $request->reference_transaction,
+                'notes' => $request->notes,
                 'statut' => 'VALIDEE',
                 'validated_by' => $request->user_uuid,
                 'validated_at' => now()
-            ]);
+            ];
 
+            // Ajouter le nom du client (expéditeur)
+            if ($request->type === 'ENVOI_MTO') {
+                $transactionData['beneficiaire_nom'] = $request->beneficiaire_nom;
+                $transactionData['beneficiaire_telephone'] = $request->beneficiaire_telephone;
+                $transactionData['beneficiaire_pays'] = $request->beneficiaire_pays;
+                // Stocker le nom de l'expéditeur dans les notes si nécessaire
+                $transactionData['notes'] = ($request->notes ? $request->notes . "\n" : '') . "Expéditeur: {$clientNomComplet}";
+            } else {
+                // Pour une réception, le bénéficiaire est le client
+                $transactionData['beneficiaire_nom'] = $clientNomComplet;
+            }
+
+            $transaction = Transaction::create($transactionData);
+
+            // Mettre à jour le solde de la caisse
             $transaction->updateCaisseSolde();
 
             DB::connection('mysql2')->commit();
 
+            // Recharger la caisse avec le nouveau solde
+            $caisseActualisee = Caisse::where('uuid', $request->caisse_uuid)->first();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Opération MTO effectuée avec succès',
-                'data' => $transaction->load('operator')
+                'message' => $request->type === 'ENVOI_MTO' ? 'Envoi MTO effectué avec succès' : 'Réception MTO validée avec succès',
+                'data' => [
+                    'transaction' => $transaction->load('operator'),
+                    'solde_restant' => $caisseActualisee->solde_theorique
+                ]
             ], 201);
 
         } catch (\Exception $e) {
             DB::connection('mysql2')->rollBack();
+            \Log::error('Erreur operationMTO:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'opération MTO',
@@ -405,9 +463,12 @@ class TransactionController extends Controller
 
     // Statistiques des transactions
     public function statistiques(Request $request)
-    {
+{
+    try {
+        // Construire la requête de base
         $query = Transaction::where('statut', 'VALIDEE');
 
+        // Appliquer les filtres
         if ($request->caisse_uuid) {
             $query->where('caisse_uuid', $request->caisse_uuid);
         }
@@ -420,23 +481,79 @@ class TransactionController extends Controller
             $query->whereDate('created_at', '<=', $request->date_fin);
         }
 
+        // Exécuter les agrégations en une seule requête
+        $aggregates = (clone $query)->select(
+            DB::raw('COUNT(*) as total_transactions'),
+            DB::raw('SUM(CASE WHEN sens = "ENTREE" THEN montant_total ELSE 0 END) as total_entrees'),
+            DB::raw('SUM(CASE WHEN sens = "SORTIE" THEN montant_total ELSE 0 END) as total_sorties'),
+            DB::raw('SUM(frais) as total_frais')
+        )->first();
+
+        // Statistiques par type
+        $parType = (clone $query)
+            ->select('type', 
+                DB::raw('COUNT(*) as count'), 
+                DB::raw('SUM(montant_total) as total'))
+            ->groupBy('type')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'type' => $item->type,
+                    'count' => $item->count,
+                    'total' => floatval($item->total)
+                ];
+            });
+
+        // Statistiques par opérateur
+        $parOperateur = (clone $query)
+            ->select('operator_uuid', 
+                DB::raw('COUNT(*) as count'), 
+                DB::raw('SUM(montant_total) as total'))
+            ->with('operator')
+            ->groupBy('operator_uuid')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'operator_uuid' => $item->operator_uuid,
+                    'operator' => $item->operator,
+                    'count' => $item->count,
+                    'total' => floatval($item->total)
+                ];
+            });
+
+        // Calculer les métriques supplémentaires
+        $totalEntrees = floatval($aggregates->total_entrees ?? 0);
+        $totalSorties = floatval($aggregates->total_sorties ?? 0);
+        $totalVolume = $totalEntrees + $totalSorties;
+        $totalTransactions = intval($aggregates->total_transactions ?? 0);
+        
         $stats = [
-            'total_transactions' => $query->count(),
-            'total_entrees' => $query->where('sens', 'ENTREE')->sum('montant_total'),
-            'total_sorties' => $query->where('sens', 'SORTIE')->sum('montant_total'),
-            'total_frais' => $query->sum('frais'),
-            'par_type' => $query->select('type', DB::raw('count(*) as count, sum(montant_total) as total'))
-                                ->groupBy('type')
-                                ->get(),
-            'par_operateur' => $query->select('operator_uuid', DB::raw('count(*) as count, sum(montant_total) as total'))
-                                    ->with('operator')
-                                    ->groupBy('operator_uuid')
-                                    ->get()
+            'total_transactions' => $totalTransactions,
+            'total_entrees' => $totalEntrees,
+            'total_sorties' => $totalSorties,
+            'total_frais' => floatval($aggregates->total_frais ?? 0),
+            'total_volume' => $totalVolume,
+            'moyenne_transaction' => $totalTransactions > 0 ? round($totalVolume / $totalTransactions, 2) : 0,
+            'par_type' => $parType,
+            'par_operateur' => $parOperateur
         ];
 
         return response()->json([
             'success' => true,
             'data' => $stats
         ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Erreur statistiques:', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors du chargement des statistiques',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 }

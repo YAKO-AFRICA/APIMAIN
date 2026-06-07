@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\CaisseController;
+use App\Http\Controllers\Api\CaisseEtatController;
+use App\Http\Controllers\Api\CaisseMouvementController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\PaiementController;
+use App\Http\Controllers\Api\RapportCaisseController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\SmsController;
 use App\Http\Controllers\Api\SouscriptionController;
@@ -93,7 +96,40 @@ Route::prefix('transactions')->group(function () {
     Route::post('/retrait-mobile-money', [TransactionController::class, 'retraitMobileMoney']);
     Route::post('/operation-mto', [TransactionController::class, 'operationMTO']);
     Route::post('/annuler/{uuid}', [TransactionController::class, 'annuler']);
+    Route::get('/transactions-by-period', [DashboardController::class, 'getTransactionsByPeriod']);
 });
+
+Route::prefix('caisse-mouvements')->group(function () {
+    Route::get('/get', [CaisseMouvementController::class, 'index']);
+    Route::post('/approvisionnement', [CaisseMouvementController::class, 'approvisionnement']);
+    Route::post('/rapatriement', [CaisseMouvementController::class, 'rapatriement']);
+    Route::post('/valider-envoi/{uuid}', [CaisseMouvementController::class, 'validerEnvoi']);
+    Route::post('/confirmer-reception/{uuid}', [CaisseMouvementController::class, 'confirmerReception']);
+    Route::post('/annuler/{uuid}', [CaisseMouvementController::class, 'annuler']);
+
+    Route::get('/stats', [CaisseMouvementController::class, 'getStats']);
+    Route::get('/mouvements-by-period', [CaisseMouvementController::class, 'getMouvementsByPeriod']);
+    Route::get('/top-caisses', [CaisseMouvementController::class, 'getTopCaisses']);
+    Route::get('/mouvements-by-statut', [CaisseMouvementController::class, 'getMouvementsByStatut']);
+});
+
+Route::prefix('caisse-etat')->group(function () {
+    Route::get('/check', [CaisseEtatController::class, 'checkOuverture']);
+    Route::post('/ouvrir', [CaisseEtatController::class, 'ouvrir']);
+    Route::post('/rapprochement', [CaisseEtatController::class, 'rapprochement']);
+    Route::post('/fermer', [CaisseEtatController::class, 'fermer']);
+    Route::post('/verrouiller/{uuid}', [CaisseEtatController::class, 'verrouiller']);
+    Route::post('/deverrouiller/{uuid}', [CaisseEtatController::class, 'deverrouiller']);
+    Route::get('/historique', [CaisseEtatController::class, 'historique']);
+});
+
+
+Route::prefix('caisse-rapports')->group(function () {
+    Route::get('/journalier', [RapportCaisseController::class, 'rapportJournalier']);
+    Route::post('/export-pdf', [RapportCaisseController::class, 'exportPdf']);
+    Route::post('/export-excel', [RapportCaisseController::class, 'exportExcel']);
+});
+
 
 // api calcule de prime cotation pret
 Route::post('/simulateur/prime/pret', [SimulateurPrimeController::class, 'simulatePrime']);

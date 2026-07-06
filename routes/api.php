@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\CaisseEtatController;
 use App\Http\Controllers\Api\CaisseMouvementController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\JekoPaymentController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportCaisseController;
@@ -152,6 +153,21 @@ Route::prefix('param')->group(function () {
 
 Route::prefix('paiement')->group(function () {
     Route::post('/save-paiement-om-callback', [PaiementController::class, 'savePaiementOM']);
+});
+
+
+Route::prefix('/paiements/jeko')->group(function () {
+    // Initialisation du paiement
+    Route::post('/init', [JekoPaymentController::class, 'initierPaiement'])
+        ->name('api.paiements.jeko.init');
+    
+    // Vérification du statut
+    Route::get('/statut/{referenceInterne}', [JekoPaymentController::class, 'verifierStatut'])
+        ->name('api.paiements.jeko.statut');
+    
+    // Webhook pour les notifications
+    Route::post('/webhook', [JekoPaymentController::class, 'webhook'])
+        ->name('api.paiements.jeko.webhook');
 });
 
 

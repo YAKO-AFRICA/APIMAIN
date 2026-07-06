@@ -36,7 +36,7 @@ class PaiementController extends Controller
                 'payment_validation_date' => $dateTransaction,
                 'typePaiement' => 1,
                 // 'idproposition' => 0,
-                'typeReference' => 0,
+                // 'typeReference' => 0,
                 'referenceSource' => $idTransaction,
                 // 'nombreDePrime' => 0,
                 // 'num_souscripteur' => 0,
@@ -72,4 +72,6 @@ class PaiementController extends Controller
             ], 500);
         }
     }
+
+    
 }

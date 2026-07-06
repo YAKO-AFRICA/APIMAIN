@@ -1,7 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ApiController;
+use App\Http\Controllers\Api\JekoPaymentController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,7 +15,10 @@ use App\Http\Controllers\Api\ApiController;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
+Route::get('/',[JekoPaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
+
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 

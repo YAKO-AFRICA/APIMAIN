@@ -32,6 +32,14 @@ return [
         'password'   => env('YVON_API_PASSWORD', 'yako2024'),
     ],
 
+    'jeko' => [
+        'base_url' => env('JEKO_BASE_URL', 'https://api.jeko.africa'),
+        'store_id' => env('JEKO_STORE_ID'),
+        'api_key' => env('JEKO_PARTNER_API_KEY'),
+        'api_key_id' => env('JEKO_PARTNER_API_KEY_ID'),
+        'webhook_secret' => env('JEKO_WEBHOOK_SECRET'),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

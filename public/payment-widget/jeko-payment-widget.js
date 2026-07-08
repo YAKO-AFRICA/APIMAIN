@@ -549,7 +549,7 @@
             return `
         <div class="jeko-field" data-role="contract">
           <label for="jeko-contract">${t.contractIdLabel}</label>
-          <input id="jeko-contract" class="disabled-input" type="text" placeholder="${t.contractIdPlaceholder}" value="${this._paymentData.contractId || ""}" />
+          <input id="jeko-contract" class=" ${this._paymentData.paymentType === "firstPayment" ? "disabled-input" : ""}" type="text" placeholder="${t.contractIdPlaceholder}" value="${this._paymentData.contractId || ""}" />
           <div class="error-message">${t.requiredField}</div>
         </div>
         <button type="button" class="jeko-submit" data-action="verify-contract" style="margin-top:8px;background:#fff;color:var(--jeko-primary-dark);border:2px solid var(--jeko-primary);">${t.verify}</button>

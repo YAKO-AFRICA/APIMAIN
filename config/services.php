@@ -40,6 +40,10 @@ return [
         'webhook_secret' => env('JEKO_WEBHOOK_SECRET'),
     ],
 
+    'api' => [
+        'encaissement_bis' => env('API_ENCAISSEMENT_BIS', 'https://api.yakoafricassur.com/oldweb/encaissement-bis'),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

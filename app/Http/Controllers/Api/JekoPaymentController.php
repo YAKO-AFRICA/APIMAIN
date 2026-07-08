@@ -3,19 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\TblFacture;
 use App\Models\TblPaiement;
+use App\Services\EncaissementBisService;
 use App\Services\JekoPaymentService;
+use App\Services\PrimePaymentOrchestrator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
-// class JekoPaymentController extends Controller
-// {
 
-//     /**
 //      * Contrôleur proxy pour l'API de paiement Jeko.
 //      *
 //      * Le widget frontend (jeko-widget.js) n'appelle JAMAIS l'API Jeko
@@ -37,6 +38,9 @@ use Illuminate\Support\Str;
 //      *       'api_key_id' => env('JEKO_PARTNER_API_KEY_ID'),
 //      *   ],
 //      */
+
+// class JekoPaymentController extends Controller
+// {
 //     private const METHODES_AUTORISEES = [
 //         'wave',
 //         'orange',
@@ -55,33 +59,57 @@ use Illuminate\Support\Str;
 //         'djamo',
 //     ];
 
+//     private const DEVISES_SUPPORTEES = ['XOF', 'XAF', 'USD', 'EUR'];
+
+//     protected JekoPaymentService $jekoService;
+
+//     public function __construct(JekoPaymentService $jekoService)
+//     {
+//         $this->jekoService = $jekoService;
+//     }
+
+//     public function demoJekoWidget()
+//     {
+//         return view('paiement.demo-jeko-widget');
+//     }
+
 //     /**
-//      * Initialise un paiement auprès de Jeko à partir des données
-//      * envoyées par le widget, puis renvoie l'URL de redirection.
+//      * Initialise un paiement auprès de Jeko
 //      */
 //     public function initierPaiement(Request $request): JsonResponse
 //     {
+//         // Validation renforcée
 //         $validator = Validator::make($request->all(), [
-//             'amountCents' => ['required', 'integer', 'min:100'],
-//             'currency' => ['nullable', 'string', 'size:3'],
-//             'reference' => ['required', 'string', 'max:100'],
+//             'amountCents' => ['required', 'integer', 'min:100', 'max:999999999'],
+//             'currency' => ['nullable', 'string', 'size:3', 'in:' . implode(',', self::DEVISES_SUPPORTEES)],
+//             'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
 //             'paymentMethod' => ['required', 'string', 'in:' . implode(',', self::METHODES_AUTORISEES)],
-//             'payerPhone' => ['nullable', 'string', 'max:20'],
-//             'successUrl' => ['nullable', 'url'],
-//             'errorUrl' => ['nullable', 'url'],
+//             'payerPhone' => ['nullable', 'string', 'max:20', 'regex:/^[\+]?[0-9]{8,15}$/'],
+//             'successUrl' => ['nullable', 'url', 'max:500'],
+//             'errorUrl' => ['nullable', 'url', 'max:500'],
+//             'description' => ['nullable', 'string', 'max:255'],
+//             'customerEmail' => ['nullable', 'email', 'max:100'],
+//             'customerName' => ['nullable', 'string', 'max:100'],
+//             'metadata' => ['nullable', 'array'],
 //         ]);
 
 //         if ($validator->fails()) {
+//             Log::warning('Validation du paiement échouée', [
+//                 'errors' => $validator->errors(),
+//                 'input' => $request->except(['amountCents'])
+//             ]);
+
 //             return response()->json([
 //                 'success' => false,
 //                 'message' => 'Données de paiement invalides.',
 //                 'code' => 'VALIDATION_ERROR',
-//                 'data' => $validator->errors(),
+//                 'errors' => $validator->errors(),
 //             ], 422);
 //         }
 
 //         $donnees = $validator->validated();
 
+//         // Vérification du téléphone pour les méthodes qui en nécessitent
 //         if (
 //             in_array($donnees['paymentMethod'], self::METHODES_NECESSITANT_TELEPHONE, true)
 //             && empty($donnees['payerPhone'])
@@ -94,62 +122,42 @@ use Illuminate\Support\Str;
 //             ], 422);
 //         }
 
-//         // Référence interne unique pour retrouver la transaction plus tard,
-//         // indépendamment de la référence métier envoyée par le widget.
+//         // Nettoyage du numéro de téléphone
+//         if (!empty($donnees['payerPhone'])) {
+//             $donnees['payerPhone'] = $this->cleanPhoneNumber($donnees['payerPhone']);
+//         }
+
+//         // Génération d'une référence interne unique
 //         $referenceInterne = (string) Str::uuid();
 
-//         $corpsRequete = [
-//             'storeId' => config('services.jeko.store_id'),
-//             'amountCents' => $donnees['amountCents'],
-//             'currency' => $donnees['currency'] ?? 'XOF',
-//             'reference' => $donnees['reference'],
-//             'paymentDetails' => [
-//                 'type' => 'redirect',
-//                 'data' => [
-//                     'paymentMethod' => $donnees['paymentMethod'],
-//                     'successUrl' => $donnees['successUrl'] ?? config('app.url'),
-//                     'errorUrl' => $donnees['errorUrl'] ?? config('app.url'),
-//                     'payerPhone' => $donnees['payerPhone'] ?? null,
-//                 ],
-//             ],
-//         ];
-
 //         try {
-//             $reponse = Http::withHeaders([
-//                 'Content-Type' => 'application/json',
-//                 'X-API-KEY' => config('services.jeko.api_key'),
-//                 'X-API-KEY-ID' => config('services.jeko.api_key_id'),
-//             ])
-//                 ->timeout(15)
-//                 ->post(config('services.jeko.base_url') . '/partner_api/payment_requests', $corpsRequete);
+//             // Appel au service Jeko
+//             $resultat = $this->jekoService->initialiserPaiement($donnees, $referenceInterne);
 
-//             $donneesReponse = $reponse->json();
-
-//             // Traçabilité : on enregistre chaque tentative d'initialisation,
-//             // quel que soit le résultat, pour pouvoir réconcilier plus tard.
-//             TblPaiement::create([
+//             // Log des données de resultat
+//             Log::info('Initialisation paiement Jeko', [
+//                 'donnees' => $donnees,
 //                 'reference_interne' => $referenceInterne,
-//                 'reference_metier' => $donnees['reference'],
-//                 'montant_cents' => $donnees['amountCents'],
-//                 'devise' => $donnees['currency'] ?? 'XOF',
-//                 'methode' => $donnees['paymentMethod'],
-//                 'statut' => $reponse->successful() ? 'initie' : 'echec',
-//                 'reponse_jeko' => $donneesReponse,
+//                 'resultat' => $resultat
 //             ]);
 
-//             if (! $reponse->successful() || empty($donneesReponse['redirectUrl'])) {
-//                 Log::warning('Echec initialisation paiement Jeko', [
+//             // Enregistrement de la transaction
+//             $this->enregistrerTransaction($donnees, $referenceInterne, $resultat);
+
+
+//             if (!$resultat['success']) {
+//                 Log::warning('Échec initialisation paiement Jeko', [
 //                     'reference' => $donnees['reference'],
-//                     'statut_http' => $reponse->status(),
-//                     'reponse' => $donneesReponse,
+//                     'reference_interne' => $referenceInterne,
+//                     'erreur' => $resultat['message'] ?? 'Erreur inconnue',
 //                 ]);
 
 //                 return response()->json([
 //                     'success' => false,
-//                     'message' => "Impossible d'initialiser le paiement pour le moment.",
-//                     'code' => 'JEKO_INIT_FAILED',
+//                     'message' => $resultat['message'] ?? "Impossible d'initialiser le paiement.",
+//                     'code' => $resultat['code'] ?? 'JEKO_INIT_FAILED',
 //                     'data' => null,
-//                 ], 502);
+//                 ], $resultat['status'] ?? 502);
 //             }
 
 //             return response()->json([
@@ -157,14 +165,29 @@ use Illuminate\Support\Str;
 //                 'message' => 'Paiement initialisé avec succès.',
 //                 'code' => 'PAYMENT_INITIATED',
 //                 'data' => [
-//                     'redirectUrl' => $donneesReponse['redirectUrl'],
+//                     'redirectUrl' => $resultat['redirectUrl'],
 //                     'referenceInterne' => $referenceInterne,
+//                     'referenceMetier' => $donnees['reference'],
+//                     'montant' => $donnees['amountCents'] / 100,
+//                     'devise' => $donnees['currency'] ?? 'XOF',
 //                 ],
 //             ]);
 //         } catch (\Throwable $e) {
-//             Log::error('Erreur appel API Jeko', [
-//                 'reference' => $donnees['reference'],
+//             Log::error('Erreur critique appel API Jeko', [
+//                 'reference' => $donnees['reference'] ?? 'inconnue',
 //                 'message' => $e->getMessage(),
+//                 'trace' => $e->getTraceAsString(),
+//             ]);
+
+//             // Enregistrement de l'échec
+//             TblPaiement::create([
+//                 'reference_interne' => $referenceInterne ?? Str::uuid(),
+//                 'reference_metier' => $donnees['reference'] ?? 'inconnue',
+//                 'montant_cents' => $donnees['amountCents'] ?? 0,
+//                 'devise' => $donnees['currency'] ?? 'XOF',
+//                 'methode' => $donnees['paymentMethod'] ?? 'inconnue',
+//                 'statut' => 'echec_critique',
+//                 'reponse_jeko' => ['error' => $e->getMessage()],
 //             ]);
 
 //             return response()->json([
@@ -175,9 +198,142 @@ use Illuminate\Support\Str;
 //             ], 503);
 //         }
 //     }
+
+//     /**
+//      * Vérifie le statut d'un paiement
+//      */
+//     public function verifierStatut(Request $request, string $referenceInterne): JsonResponse
+//     {
+//         try {
+//             $paiement = TblPaiement::where('reference_interne', $referenceInterne)->first();
+
+//             if (!$paiement) {
+//                 return response()->json([
+//                     'success' => false,
+//                     'message' => 'Transaction non trouvée.',
+//                     'code' => 'TRANSACTION_NOT_FOUND',
+//                 ], 404);
+//             }
+
+//             // Vérification du statut auprès de Jeko
+//             $statut = $this->jekoService->verifierStatut($paiement);
+
+//             return response()->json([
+//                 'success' => true,
+//                 'data' => [
+//                     'statut' => $statut['status'],
+//                     'montant' => $paiement->montant_cents / 100,
+//                     'devise' => $paiement->devise,
+//                     'reference' => $paiement->reference_metier,
+//                     'details' => $statut['details'] ?? null,
+//                 ],
+//             ]);
+//         } catch (\Throwable $e) {
+//             Log::error('Erreur vérification statut', [
+//                 'reference' => $referenceInterne,
+//                 'message' => $e->getMessage(),
+//             ]);
+
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'Erreur lors de la vérification du statut.',
+//                 'code' => 'STATUS_CHECK_FAILED',
+//             ], 500);
+//         }
+//     }
+
+//     /**
+//      * Webhook pour recevoir les notifications de Jeko
+//      */
+//     public function webhook(Request $request)
+//     // public function webhook(Request $request): JsonResponse
+//     {
+//         $payload = $request->all();
+
+//         Log::info('Webhook Jeko reçu', ['payload' => $payload]);
+
+//         try {
+//             // Validation du webhook
+//             if (!$this->jekoService->validerWebhook($request)) {
+//                 Log::warning('Webhook Jeko non valide', ['payload' => $payload]);
+//                 return response()->json(['error' => 'Invalid webhook'], 401);
+//             }
+
+//             // Traitement du webhook
+//             $resultat = $this->jekoService->traiterWebhook($payload);
+
+//             if ($resultat) {
+//                 Log::info('Webhook Jeko traité avec succès', ['reference' => $resultat['reference'] ?? 'inconnue']);
+//                 return response()->json(['status' => 'success'], 200);
+//             }
+
+//             return response()->json(['status' => 'ignored'], 200);
+//         } catch (\Throwable $e) {
+//             Log::error('Erreur traitement webhook Jeko', [
+//                 'message' => $e->getMessage(),
+//                 'payload' => $payload,
+//             ]);
+
+//             return response()->json(['error' => 'Webhook processing failed'], 500);
+//         }
+//     }
+
+//     /**
+//      * Nettoie le numéro de téléphone
+//      */
+//     private function cleanPhoneNumber(string $phone): string
+//     {
+//         // Supprimer les espaces, tirets, points
+//         $phone = preg_replace('/[\s\-\.\(\)]/', '', $phone);
+        
+//         // S'assurer que le numéro commence par +
+//         if (!str_starts_with($phone, '+')) {
+//             if (str_starts_with($phone, '00')) {
+//                 $phone = '+' . substr($phone, 2);
+//             } elseif (strlen($phone) === 10 && str_starts_with($phone, '0')) {
+//                 // Format local (ex: 078817235) -> +22578817235
+//                 $phone = '+225' . substr($phone, 1);
+//             } else {
+//                 $phone = '+' . $phone;
+//             }
+//         }
+
+//         return $phone;
+//     }
+
+//     /**
+//      * Enregistre la transaction en base de données
+//      */
+//     private function enregistrerTransaction(array $donnees, string $referenceInterne, array $resultat): void
+//     {
+//         // log des données de paiement
+//         Log::info('Transaction enregistrée', [
+//             'reference_interne' => $referenceInterne,
+//             'reference_metier' => $donnees['reference'],
+//             'montant_cents' => $donnees['amountCents'],
+//             'devise' => $donnees['currency'] ?? 'XOF',
+//             'methode' => $donnees['paymentMethod'],
+//             'statut' => $resultat['success'] ? 'initie' : 'echec',
+//             'reponse_jeko' => $resultat,
+//         ]);
+
+//         TblPaiement::create([
+//             'reference_interne' => $referenceInterne,
+//             'reference_metier' => $donnees['reference'],
+//             'montant_cents' => $donnees['amountCents'],
+//             'devise' => $donnees['currency'] ?? 'XOF',
+//             'methode' => $donnees['paymentMethod'],
+//             'statut' => $resultat['success'] ? 'initie' : 'echec',
+//             'reponse_jeko' => $resultat,
+//             'telephone' => $donnees['payerPhone'] ?? null,
+//             'email' => $donnees['customerEmail'] ?? null,
+//             'description' => $donnees['description'] ?? null,
+//             'metadata' => $donnees['metadata'] ?? null,
+//         ]);
+//     }
 // }
 
-class JekoPaymentController extends Controller
+class  JekoPaymentController extends Controller
 {
     private const METHODES_AUTORISEES = [
         'wave',
@@ -188,41 +344,102 @@ class JekoPaymentController extends Controller
         'visa',
         'mastercard',
     ];
-
-    private const METHODES_NECESSITANT_TELEPHONE = [
-        'wave',
-        'orange',
-        'moov',
-        'mtn',
-        'djamo',
+ 
+    private const TYPES_PAIEMENT_AUTORISES = [
+        'firstPayment',
+        'earlyPayment',
+        'recoveryPrime',
     ];
-
+ 
     private const DEVISES_SUPPORTEES = ['XOF', 'XAF', 'USD', 'EUR'];
-
-    protected JekoPaymentService $jekoService;
-
-    public function __construct(JekoPaymentService $jekoService)
-    {
-        $this->jekoService = $jekoService;
+ 
+    public function __construct(
+        protected JekoPaymentService $jekoService,
+        protected PrimePaymentOrchestrator $orchestrator,
+        protected EncaissementBisService $encaissementBis,
+    ) {
     }
-
+ 
     public function demoJekoWidget()
     {
         return view('paiement.demo-jeko-widget');
     }
 
+
+    public function jekoPaymentWidget()
+    {
+        $path = public_path('payment-widget/jeko-payment-widget.js');
+
+        if (!File::exists($path)) {
+            abort(404);
+        }
+
+        return response(File::get($path), 200)
+            ->header('Content-Type', 'application/javascript');
+    }
+
+    
+ 
     /**
-     * Initialise un paiement auprès de Jeko
+     * Vérifie un contrat auprès de l'API legacy encaissement-bis.
+     * Utilisé par le widget avant d'afficher les options earlyPayment / recoveryPrime
+     * (et optionnellement firstPayment si un contractId est déjà connu).
+     */
+    public function verifierContrat(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'idContrat' => ['required', 'string', 'max:100'],
+            'paymentType' => ['nullable', 'string', 'in:' . implode(',', self::TYPES_PAIEMENT_AUTORISES)],
+        ]);
+ 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Identifiant de contrat invalide.',
+                'code' => 'VALIDATION_ERROR',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+ 
+        $idContrat = $request->input('idContrat');
+        $paymentType = $request->input('paymentType');
+        $resultat = ($paymentType === 'firstPayment') ? $this->encaissementBis->recupDetailsContratWeb($idContrat, $paymentType) : $this->encaissementBis->verifierContrat($idContrat, $paymentType);
+ 
+        if (!$resultat['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $resultat['message'] ?? 'Contrat introuvable.',
+                'code' => 'CONTRACT_NOT_FOUND',
+                'data' => null,
+            ], 404);
+        }
+ 
+        return response()->json([
+            'success' => true,
+            'message' => 'Contrat vérifié.',
+            'code' => 'CONTRACT_VERIFIED',
+            'data' => $resultat,
+        ]);
+    }
+ 
+    /**
+     * Initialise un paiement auprès de Jeko pour l'un des 3 cas d'usage.
      */
     public function initierPaiement(Request $request): JsonResponse
     {
-        // Validation renforcée
+
+        Log::info('initierPaiement', $request->all());
         $validator = Validator::make($request->all(), [
-            'amountCents' => ['required', 'integer', 'min:100', 'max:999999999'],
-            'currency' => ['nullable', 'string', 'size:3', 'in:' . implode(',', self::DEVISES_SUPPORTEES)],
             'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
+            'currency' => ['nullable', 'string', 'size:3', 'in:' . implode(',', self::DEVISES_SUPPORTEES)],
             'paymentMethod' => ['required', 'string', 'in:' . implode(',', self::METHODES_AUTORISEES)],
-            'payerPhone' => ['nullable', 'string', 'max:20', 'regex:/^[\+]?[0-9]{8,15}$/'],
+            'paymentType' => ['required', 'string', 'in:' . implode(',', self::TYPES_PAIEMENT_AUTORISES)],
+ 
+            'contractId' => ['nullable', 'string', 'max:100'],
+            'numberOfPrimes' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'selectedInvoiceIds' => ['nullable', 'array'],
+            'selectedInvoiceIds.*' => ['string', 'max:50'],
+ 
             'successUrl' => ['nullable', 'url', 'max:500'],
             'errorUrl' => ['nullable', 'url', 'max:500'],
             'description' => ['nullable', 'string', 'max:255'],
@@ -230,13 +447,26 @@ class JekoPaymentController extends Controller
             'customerName' => ['nullable', 'string', 'max:100'],
             'metadata' => ['nullable', 'array'],
         ]);
+ 
+        $validator->after(function ($v) use ($request) {
+            $type = $request->input('paymentType');
+ 
+            if (in_array($type, ['earlyPayment', 'recoveryPrime', 'firstPayment'], true) && !$request->filled('contractId')) {
+                $v->errors()->add('contractId', "L'identifiant du contrat est requis pour ce type de paiement.");
+            }
+ 
+            if ($type === 'recoveryPrime' && !$request->filled('selectedInvoiceIds')) {
+                $v->errors()->add('selectedInvoiceIds', 'Veuillez sélectionner au moins une facture à régulariser.');
+            }
 
+        });
+ 
         if ($validator->fails()) {
             Log::warning('Validation du paiement échouée', [
                 'errors' => $validator->errors(),
-                'input' => $request->except(['amountCents'])
+                'input' => $request->except(['metadata']),
             ]);
-
+ 
             return response()->json([
                 'success' => false,
                 'message' => 'Données de paiement invalides.',
@@ -244,52 +474,64 @@ class JekoPaymentController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
-
+ 
         $donnees = $validator->validated();
 
-        // Vérification du téléphone pour les méthodes qui en nécessitent
-        if (
-            in_array($donnees['paymentMethod'], self::METHODES_NECESSITANT_TELEPHONE, true)
-            && empty($donnees['payerPhone'])
-        ) {
+        Log::info('Données de paiement validées', $donnees);
+ 
+        // 1) Calcul du montant et des lignes de factures — TOUJOURS côté serveur
+        try {
+            $preparation = $this->orchestrator->preparer($donnees);
+        } catch (\RuntimeException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Le numéro de téléphone est requis pour ce moyen de paiement.',
-                'code' => 'PHONE_REQUIRED',
+                'message' => $e->getMessage(),
+                'code' => 'PREPARATION_FAILED',
                 'data' => null,
             ], 422);
         }
-
-        // Nettoyage du numéro de téléphone
-        if (!empty($donnees['payerPhone'])) {
-            $donnees['payerPhone'] = $this->cleanPhoneNumber($donnees['payerPhone']);
+ 
+        if ($preparation['montantTotal'] <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Le montant calculé est invalide.',
+                'code' => 'INVALID_AMOUNT',
+                'data' => null,
+            ], 422);
         }
-
-        // Génération d'une référence interne unique
-        $referenceInterne = (string) Str::uuid();
-
+ 
+        $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
+ 
         try {
-            // Appel au service Jeko
-            $resultat = $this->jekoService->initialiserPaiement($donnees, $referenceInterne);
-
-            // Log des données de resultat
+            // 2) Appel Jeko avec le montant recalculé (convention "amountCents" = XOF * 100)
+            $resultat = $this->jekoService->initialiserPaiement([
+                'amountCents' => $preparation['montantTotal'] * 100,
+                'currency' => $donnees['currency'] ?? 'XOF',
+                'reference' => $donnees['reference'],
+                'paymentMethod' => $donnees['paymentMethod'],
+                // 'successUrl' => route('paiement.recu', ['referenceInterne' => $referenceInterne]),
+                'successUrl' => $donnees['successUrl'] ?? null,
+                'errorUrl' => $donnees['errorUrl'] ?? null,
+                'customerEmail' => $donnees['customerEmail'] ?? null,
+                'customerName' => $donnees['customerName'] ?? null,
+                'description' => $donnees['description'] ?? null,
+                'metadata' => $donnees['metadata'] ?? null,
+            ], $referenceInterne);
+ 
             Log::info('Initialisation paiement Jeko', [
-                'donnees' => $donnees,
                 'reference_interne' => $referenceInterne,
-                'resultat' => $resultat
+                'paymentType' => $donnees['paymentType'],
+                'montant' => $preparation['montantTotal'],
+                'resultat' => $resultat,
             ]);
-
-            // Enregistrement de la transaction
-            $this->enregistrerTransaction($donnees, $referenceInterne, $resultat);
-
-
+ 
             if (!$resultat['success']) {
                 Log::warning('Échec initialisation paiement Jeko', [
                     'reference' => $donnees['reference'],
                     'reference_interne' => $referenceInterne,
                     'erreur' => $resultat['message'] ?? 'Erreur inconnue',
                 ]);
-
+ 
                 return response()->json([
                     'success' => false,
                     'message' => $resultat['message'] ?? "Impossible d'initialiser le paiement.",
@@ -297,7 +539,10 @@ class JekoPaymentController extends Controller
                     'data' => null,
                 ], $resultat['status'] ?? 502);
             }
-
+ 
+            // 3) Enregistrement tblpaiement + tblfacture (colonnes réelles du schéma)
+            // $paiement = $this->orchestrator->enregistrer($donnees, $preparation, $referenceInterne, $resultat);
+ 
             return response()->json([
                 'success' => true,
                 'message' => 'Paiement initialisé avec succès.',
@@ -306,8 +551,10 @@ class JekoPaymentController extends Controller
                     'redirectUrl' => $resultat['redirectUrl'],
                     'referenceInterne' => $referenceInterne,
                     'referenceMetier' => $donnees['reference'],
-                    'montant' => $donnees['amountCents'] / 100,
+                    'montant' => $preparation['montantTotal'],
                     'devise' => $donnees['currency'] ?? 'XOF',
+                    'nombreDePrimes' => $preparation['nombreDePrimes'],
+                    'recuUrl' => route('paiement.recu', ['referenceInterne' => $referenceInterne]),
                 ],
             ]);
         } catch (\Throwable $e) {
@@ -316,18 +563,7 @@ class JekoPaymentController extends Controller
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-
-            // Enregistrement de l'échec
-            // TblPaiement::create([
-            //     'reference_interne' => $referenceInterne ?? Str::uuid(),
-            //     'reference_metier' => $donnees['reference'] ?? 'inconnue',
-            //     'montant_cents' => $donnees['amountCents'] ?? 0,
-            //     'devise' => $donnees['currency'] ?? 'XOF',
-            //     'methode' => $donnees['paymentMethod'] ?? 'inconnue',
-            //     'statut' => 'echec_critique',
-            //     'reponse_jeko' => ['error' => $e->getMessage()],
-            // ]);
-
+ 
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur technique lors de la communication avec le service de paiement.',
@@ -336,15 +572,15 @@ class JekoPaymentController extends Controller
             ], 503);
         }
     }
-
+ 
     /**
-     * Vérifie le statut d'un paiement
+     * Vérifie le statut d'un paiement (via referenceInterne = codePaiement).
      */
     public function verifierStatut(Request $request, string $referenceInterne): JsonResponse
     {
         try {
-            $paiement = TblPaiement::where('reference_interne', $referenceInterne)->first();
-
+            $paiement = TblPaiement::where('codePaiement', $referenceInterne)->first();
+ 
             if (!$paiement) {
                 return response()->json([
                     'success' => false,
@@ -352,17 +588,16 @@ class JekoPaymentController extends Controller
                     'code' => 'TRANSACTION_NOT_FOUND',
                 ], 404);
             }
-
-            // Vérification du statut auprès de Jeko
+ 
             $statut = $this->jekoService->verifierStatut($paiement);
-
+ 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'statut' => $statut['status'],
-                    'montant' => $paiement->montant_cents / 100,
-                    'devise' => $paiement->devise,
-                    'reference' => $paiement->reference_metier,
+                    'montant' => $paiement->montant,
+                    'reference' => $paiement->codePaiement,
+                    'typePaiement' => $paiement->typePaiement,
                     'details' => $statut['details'] ?? null,
                 ],
             ]);
@@ -371,7 +606,7 @@ class JekoPaymentController extends Controller
                 'reference' => $referenceInterne,
                 'message' => $e->getMessage(),
             ]);
-
+ 
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la vérification du statut.',
@@ -379,94 +614,75 @@ class JekoPaymentController extends Controller
             ], 500);
         }
     }
-
+ 
     /**
-     * Webhook pour recevoir les notifications de Jeko
+     * Webhook pour recevoir les notifications de Jeko.
+     * Met à jour tblpaiement.etat/payment_status ET les tblfacture liées.
      */
     public function webhook(Request $request)
-    // public function webhook(Request $request): JsonResponse
     {
         $payload = $request->all();
-
         Log::info('Webhook Jeko reçu', ['payload' => $payload]);
-
+ 
         // try {
-        //     // Validation du webhook
         //     if (!$this->jekoService->validerWebhook($request)) {
         //         Log::warning('Webhook Jeko non valide', ['payload' => $payload]);
         //         return response()->json(['error' => 'Invalid webhook'], 401);
         //     }
-
-        //     // Traitement du webhook
-        //     $resultat = $this->jekoService->traiterWebhook($payload);
-
-        //     if ($resultat) {
-        //         Log::info('Webhook Jeko traité avec succès', ['reference' => $resultat['reference'] ?? 'inconnue']);
-        //         return response()->json(['status' => 'success'], 200);
+ 
+        //     $referenceInterne = $payload['reference'] ?? null;
+        //     $statutJeko = $payload['status'] ?? null;
+ 
+        //     if (!$referenceInterne || !$statutJeko) {
+        //         return response()->json(['status' => 'ignored'], 200);
         //     }
-
-        //     return response()->json(['status' => 'ignored'], 200);
+ 
+        //     $paiement = TblPaiement::where('codePaiement', $referenceInterne)->first();
+ 
+        //     if (!$paiement) {
+        //         Log::warning('Transaction non trouvée pour le webhook', ['reference' => $referenceInterne]);
+        //         return response()->json(['status' => 'ignored'], 200);
+        //     }
+ 
+        //     $nouvelEtat = $this->mapperStatutVersEtat($statutJeko);
+        //     $ancienEtat = $paiement->etat;
+ 
+        //     $paiement->etat = $nouvelEtat;
+        //     $paiement->payment_status = $statutJeko;
+        //     $paiement->payment_validation_date = now()->format('Y-m-d H:i:s');
+        //     $paiement->save();
+ 
+        //     // Propage le statut aux factures liées (même codePaiement)
+        //     TblFacture::where('codePaiement', $referenceInterne)->update([
+        //         'etat' => $nouvelEtat,
+        //     ]);
+ 
+        //     Log::info('Transaction mise à jour via webhook', [
+        //         'reference' => $referenceInterne,
+        //         'ancien_etat' => $ancienEtat,
+        //         'nouvel_etat' => $nouvelEtat,
+        //     ]);
+ 
+        //     return response()->json(['status' => 'success'], 200);
         // } catch (\Throwable $e) {
         //     Log::error('Erreur traitement webhook Jeko', [
         //         'message' => $e->getMessage(),
         //         'payload' => $payload,
         //     ]);
-
+ 
         //     return response()->json(['error' => 'Webhook processing failed'], 500);
         // }
     }
-
+ 
     /**
-     * Nettoie le numéro de téléphone
+     * Convention d'état : 0 = en attente, 1 = payé, 2 = échec/annulé.
      */
-    private function cleanPhoneNumber(string $phone): string
+    private function mapperStatutVersEtat(string $statutJeko): int
     {
-        // Supprimer les espaces, tirets, points
-        $phone = preg_replace('/[\s\-\.\(\)]/', '', $phone);
-        
-        // S'assurer que le numéro commence par +
-        if (!str_starts_with($phone, '+')) {
-            if (str_starts_with($phone, '00')) {
-                $phone = '+' . substr($phone, 2);
-            } elseif (strlen($phone) === 10 && str_starts_with($phone, '0')) {
-                // Format local (ex: 078817235) -> +22578817235
-                $phone = '+225' . substr($phone, 1);
-            } else {
-                $phone = '+' . $phone;
-            }
-        }
-
-        return $phone;
-    }
-
-    /**
-     * Enregistre la transaction en base de données
-     */
-    private function enregistrerTransaction(array $donnees, string $referenceInterne, array $resultat): void
-    {
-        // log des données de paiement
-        Log::info('Transaction enregistrée', [
-            'reference_interne' => $referenceInterne,
-            'reference_metier' => $donnees['reference'],
-            'montant_cents' => $donnees['amountCents'],
-            'devise' => $donnees['currency'] ?? 'XOF',
-            'methode' => $donnees['paymentMethod'],
-            'statut' => $resultat['success'] ? 'initie' : 'echec',
-            'reponse_jeko' => $resultat,
-        ]);
-
-        // TblPaiement::create([
-        //     'reference_interne' => $referenceInterne,
-        //     'reference_metier' => $donnees['reference'],
-        //     'montant_cents' => $donnees['amountCents'],
-        //     'devise' => $donnees['currency'] ?? 'XOF',
-        //     'methode' => $donnees['paymentMethod'],
-        //     'statut' => $resultat['success'] ? 'initie' : 'echec',
-        //     'reponse_jeko' => $resultat,
-        //     'telephone' => $donnees['payerPhone'] ?? null,
-        //     'email' => $donnees['customerEmail'] ?? null,
-        //     'description' => $donnees['description'] ?? null,
-        //     'metadata' => $donnees['metadata'] ?? null,
-        // ]);
+        return match (strtolower($statutJeko)) {
+            'completed', 'success' => 1,
+            'failed', 'cancelled' => 2,
+            default => 0, // pending / processing
+        };
     }
 }

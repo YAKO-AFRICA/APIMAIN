@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\JekoPaymentController;
+use App\Http\Controllers\Api\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('/',[JekoPaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
+Route::get('/paiement/recu/{referenceInterne}', [ReceiptController::class, 'show'])->name('paiement.recu');
 
 // Route::get('/', function () {
 //     return view('welcome');

@@ -165,6 +165,12 @@ Route::prefix('/paiements/jeko')->group(function () {
     Route::get('/statut/{referenceInterne}', [JekoPaymentController::class, 'verifierStatut'])
         ->name('api.paiements.jeko.statut');
     
+    // Vérification du contrat
+    Route::post('/contrat/verifier', [JekoPaymentController::class, 'verifierContrat']);
+    
+    // Widget
+    Route::get('/jeko-payment-widget.js', [JekoPaymentController::class, 'jekoPaymentWidget']);
+    
     // Webhook pour les notifications
     Route::post('/webhook', [JekoPaymentController::class, 'webhook'])
         ->name('api.paiements.jeko.webhook');

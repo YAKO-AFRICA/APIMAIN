@@ -187,6 +187,19 @@
       .jeko-method-btn { border:2px solid #e5e7eb; background:#fafafa; border-radius:10px; padding:12px 14px; text-align:center; cursor:pointer; width:100%; display:flex; flex-direction:column; align-items:center; gap:4px; }
       .jeko-method-btn[aria-pressed="true"] { border-color:var(--jeko-primary); background:#e8f5ee; }
       .jeko-method-btn.cards-disabled { background:#f0f0f0; cursor:no-drop; pointer-events:none; }
+      .disabled-input { 
+            background-color: #9a9ea14b 
+            color: #000 !important;            
+            cursor: not-allowed;                  
+            pointer-events: none;                 
+            opacity: 0.8;                         
+        }
+
+
+        .disabled-input:hover,{
+            cursor: no-drop;
+        }
+       }
       .jeko-method-btn .icon-wrapper { width:44px; height:44px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f3f4f6; }
       .jeko-method-btn .icon-wrapper img { width:30px; height:30px; object-fit:contain; border-radius:20%; }
       .jeko-method-btn .name { font-weight:600; font-size:13px; color:#111827; }
@@ -536,7 +549,7 @@
             return `
         <div class="jeko-field" data-role="contract">
           <label for="jeko-contract">${t.contractIdLabel}</label>
-          <input id="jeko-contract" type="text" placeholder="${t.contractIdPlaceholder}" value="${this._paymentData.contractId || ""}" />
+          <input id="jeko-contract" class="disabled-input" type="text" placeholder="${t.contractIdPlaceholder}" value="${this._paymentData.contractId || ""}" />
           <div class="error-message">${t.requiredField}</div>
         </div>
         <button type="button" class="jeko-submit" data-action="verify-contract" style="margin-top:8px;background:#fff;color:var(--jeko-primary-dark);border:2px solid var(--jeko-primary);">${t.verify}</button>

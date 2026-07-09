@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <title>Paiement Jeko</title>
+
+    <style>
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+            padding:40px;
+        }
+
+        button{
+            background:#0d6efd;
+            color:#fff;
+            border:none;
+            padding:12px 25px;
+            border-radius:5px;
+            cursor:pointer;
+            font-size:16px;
+        }
+
+        button:hover{
+            background:#0b5ed7;
+        }
+
+        pre{
+            background:#f5f5f5;
+            padding:15px;
+            margin-top:20px;
+            border-radius:5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- const STORE_ID = "3283d851-314c-45f8-a85c-d9006a9f3fc0";
+
+        const PARTNER_API_KEY = "jeko_118c4842237c5160a6aede294b61d8edf42d897b54b2f10a3340323f17345a58";
+
+        const PARTNER_API_KEY_ID = "eaf42398-8b6b-4eaf-935d-61afc0d71738"; -->
+
+    <button id="payBtn">Payer</button>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+
+        const BASE_URL = "https://api.jeko.africa";
+
+        const STORE_ID = "3283d851-314c-45f8-a85c-d9006a9f3fc0";
+
+        const PARTNER_API_KEY = "jeko_118c4842237c5160a6aede294b61d8edf42d897b54b2f10a3340323f17345a58";
+
+        const PARTNER_API_KEY_ID = "eaf42398-8b6b-4eaf-935d-61afc0d71738";
+
+        document.getElementById("payBtn").addEventListener("click", function(event) {
+            event.preventDefault();
+            Swal.fire({
+                title: 'Traitement en cours...',
+                text: 'Veuillez patienter...',
+                allowOutsideClick: true,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+            });
+            
+            // 1000 apres 
+            setTimeout(() => {
+                pay();
+            }, 1000);
+        });
+
+        async function pay() {
+
+            const body = {
+                storeId: STORE_ID, 
+                amountCents: 500,// inconnu variable montant de paiement depuis le widget
+                currency: "XOF",
+                reference: "123456", //inconnu variable reference contrat de paiement depuis le widget
+                paymentDetails: {
+                    type: "redirect",
+                    data: {
+                        paymentMethod: "djamo", // inconnu variable mode de paiement depuis le widget (wave, orange, moov, mtn, djamo, visa, master card) 
+                        successUrl: "https://tanstack-start-app.dondanidang.workers.dev/",  // inconnu message page de confirmation depuis le widget
+                        errorUrl: "https://jeko.africa", // inconnu page errror de paiement depuis le widget
+                        // forceProviderDirect: false, 
+                        // payerPhone: "2250758817235" // inconnu variable de paiement depuis le widget
+                    }
+                }
+            };
+
+            try {
+
+                const response = await fetch(`${BASE_URL}/partner_api/payment_requests`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-API-KEY": PARTNER_API_KEY,
+                        "X-API-KEY-ID": PARTNER_API_KEY_ID
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                // Enregistrer la réponse côté Laravel
+                try {
+ 
+                    // await fetch("/api/save-paiement-initi-jeko", {
+                    //     method: "POST",
+                    //     headers: {
+                    //         "Content-Type": "application/json",
+                    //         "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
+                    //     },
+
+                    //     body: JSON.stringify(data)
+
+                    // });
+
+                    // Ouvrir la page de paiement
+                    if (data.redirectUrl) {
+                        // message Redirection vers la page de paiement
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Paiement initialisé avec success',
+                            text: 'Vous allez etre rediriger vers la page de paiement',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+
+                        window.open(data.redirectUrl, "_blank");
+    
+                    } else {
+    
+                         Swal.fire({
+                            icon: 'error',
+                            title: 'Initialisation du paiement échoué',
+                            text: 'Aucune URL de paiement reçue.',
+                            showConfirmButton: true,
+                            confirmButtonText: 'Réssayer',
+                        });
+    
+                    }
+ 
+                } catch (e) {
+                    console.error("Erreur log :", e);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur',
+                        text: 'Une erreur est survenue',
+                        showConfirmButton: true,
+                        confirmButtonText: 'Réssayer',
+                    });
+
+                }
+
+            } catch (error) {
+
+                console.error(error);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: error.message,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Réssayer',
+                });
+            
+            }
+
+        }
+
+    </script>
+
+</body>
+</html>
+
+ 

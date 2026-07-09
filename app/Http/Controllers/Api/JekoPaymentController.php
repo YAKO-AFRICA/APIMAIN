@@ -8,6 +8,7 @@ use App\Models\TblPaiement;
 use App\Services\EncaissementBisService;
 use App\Services\JekoPaymentService;
 use App\Services\PrimePaymentOrchestrator;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -135,7 +136,7 @@ class  JekoPaymentController extends Controller
     public function initierPaiement(Request $request): JsonResponse
     {
 
-        Log::info('initierPaiement', $request->all());
+        // Log::info('initierPaiement', $request->all());
         $validator = Validator::make($request->all(), [
             'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
             'currency' => ['nullable', 'string', 'size:3', 'in:' . implode(',', self::DEVISES_SUPPORTEES)],
@@ -189,6 +190,7 @@ class  JekoPaymentController extends Controller
         // 1) Calcul du montant et des lignes de factures — TOUJOURS côté serveur
         try {
             $preparation = $this->orchestrator->preparer($donnees);
+            Log::info('Données de la preparation', $preparation);
         } catch (\RuntimeException $e) {
             return response()->json([
                 'success' => false,
@@ -208,6 +210,7 @@ class  JekoPaymentController extends Controller
         }
  
         $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
+        // $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
  
         try {
             // 2) Appel Jeko avec le montant recalculé (convention "amountCents" = XOF * 100)
@@ -216,8 +219,8 @@ class  JekoPaymentController extends Controller
                 'currency' => $donnees['currency'] ?? 'XOF',
                 'reference' => $donnees['reference'],
                 'paymentMethod' => $donnees['paymentMethod'],
-                // 'successUrl' => route('paiement.recu', ['referenceInterne' => $referenceInterne]),
-                'successUrl' => $donnees['successUrl'] ?? null,
+                'successUrl' => route('paiement.recu', ['referenceInterne' => $referenceInterne]),
+                // 'successUrl' => $donnees['successUrl'] ?? null,
                 'errorUrl' => $donnees['errorUrl'] ?? null,
                 'customerEmail' => $donnees['customerEmail'] ?? null,
                 'customerName' => $donnees['customerName'] ?? null,
@@ -248,7 +251,7 @@ class  JekoPaymentController extends Controller
             }
  
             // 3) Enregistrement tblpaiement + tblfacture (colonnes réelles du schéma)
-            // $paiement = $this->orchestrator->enregistrer($donnees, $preparation, $referenceInterne, $resultat);
+            $paiement = $this->orchestrator->enregistrer($donnees, $preparation, $referenceInterne, $resultat);
  
             return response()->json([
                 'success' => true,
@@ -331,65 +334,70 @@ class  JekoPaymentController extends Controller
         $payload = $request->all();
         Log::info('Webhook Jeko reçu', ['payload' => $payload]);
  
-        // try {
-        //     if (!$this->jekoService->validerWebhook($request)) {
-        //         Log::warning('Webhook Jeko non valide', ['payload' => $payload]);
-        //         return response()->json(['error' => 'Invalid webhook'], 401);
-        //     }
+        try {
+            if (!$this->jekoService->validerWebhook($request)) {
+                Log::warning('Webhook Jeko non valide', ['payload' => $payload]);
+                return response()->json(['error' => 'Invalid webhook'], 401);
+            }
  
-        //     $referenceInterne = $payload['reference'] ?? null;
-        //     $statutJeko = $payload['status'] ?? null;
+            $referenceInterne = $payload['reference'] ?? null;
+            $statutJeko = $payload['status'] ?? null;
  
-        //     if (!$referenceInterne || !$statutJeko) {
-        //         return response()->json(['status' => 'ignored'], 200);
-        //     }
+            if (!$referenceInterne || !$statutJeko) {
+                return response()->json(['status' => 'ignored'], 200);
+            }
  
-        //     $paiement = TblPaiement::where('codePaiement', $referenceInterne)->first();
+            $paiement = TblPaiement::where('codePaiement', $referenceInterne)->first();
  
-        //     if (!$paiement) {
-        //         Log::warning('Transaction non trouvée pour le webhook', ['reference' => $referenceInterne]);
-        //         return response()->json(['status' => 'ignored'], 200);
-        //     }
+            if (!$paiement) {
+                Log::warning('Transaction non trouvée pour le webhook', ['reference' => $referenceInterne]);
+                return response()->json(['status' => 'ignored'], 200);
+            }
  
-        //     $nouvelEtat = $this->mapperStatutVersEtat($statutJeko);
-        //     $ancienEtat = $paiement->etat;
+            // $nouvelEtat = $this->mapperStatutVersEtat($statutJeko);
+            // $ancienEtat = $paiement->etat;
  
-        //     $paiement->etat = $nouvelEtat;
-        //     $paiement->payment_status = $statutJeko;
-        //     $paiement->payment_validation_date = now()->format('Y-m-d H:i:s');
-        //     $paiement->save();
+            $paiement->etat = 2;
+            $paiement->payment_status = $statutJeko;
+            $paiement->telpaiement = $payload['counterpartIdentifier'] ?? null;
+            $paiement->paid_sum = $payload['amount'] ?? null;
+            $paiement->paid_amount = $payload['amount']['amount'] ?? null;
+            // $paiement->payment_token = $payload['amount']['amount'] ?? null;
+            $paiement->command_number = $payload['transactionDetails']['reference'] ?? null;
+            $paiement->payment_validation_date = Carbon::now()->format('Y-m-d H:i:s');
+            $paiement->save();
  
-        //     // Propage le statut aux factures liées (même codePaiement)
-        //     TblFacture::where('codePaiement', $referenceInterne)->update([
-        //         'etat' => $nouvelEtat,
-        //     ]);
+            // Propage le statut aux factures liées (même codePaiement)
+            TblFacture::where('codePaiement', $referenceInterne)->update([
+                'etat' => 2,
+            ]);
  
-        //     Log::info('Transaction mise à jour via webhook', [
-        //         'reference' => $referenceInterne,
-        //         'ancien_etat' => $ancienEtat,
-        //         'nouvel_etat' => $nouvelEtat,
-        //     ]);
+            Log::info('Transaction mise à jour via webhook', [
+                'reference' => $referenceInterne,
+                // 'ancien_etat' => $ancienEtat,
+                // 'nouvel_etat' => $nouvelEtat,
+            ]);
  
-        //     return response()->json(['status' => 'success'], 200);
-        // } catch (\Throwable $e) {
-        //     Log::error('Erreur traitement webhook Jeko', [
-        //         'message' => $e->getMessage(),
-        //         'payload' => $payload,
-        //     ]);
+            return response()->json(['status' => 'success'], 200);
+        } catch (\Throwable $e) {
+            Log::error('Erreur traitement webhook Jeko', [
+                'message' => $e->getMessage(),
+                'payload' => $payload,
+            ]);
  
-        //     return response()->json(['error' => 'Webhook processing failed'], 500);
-        // }
+            return response()->json(['error' => 'Webhook processing failed'], 500);
+        }
     }
  
     /**
      * Convention d'état : 0 = en attente, 1 = payé, 2 = échec/annulé.
      */
-    private function mapperStatutVersEtat(string $statutJeko): int
-    {
-        return match (strtolower($statutJeko)) {
-            'completed', 'success' => 1,
-            'failed', 'cancelled' => 2,
-            default => 0, // pending / processing
-        };
-    }
+    // private function mapperStatutVersEtat(string $statutJeko): int
+    // {
+    //     return match (strtolower($statutJeko)) {
+    //         'completed', 'success' => 1,
+    //         'failed', 'cancelled' => 2,
+    //         default => 0, // pending / processing
+    //     };
+    // }
 }

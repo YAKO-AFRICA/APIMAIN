@@ -108,7 +108,7 @@ class EncaissementBisService
     {
         try {
             $contrat = Contrat::where('id', $idContrat)->first();
-            Log::debug('Contrat', ['idContrat' => $idContrat, 'contrat' => $contrat]);
+            // Log::debug('Contrat', ['idContrat' => $idContrat, 'contrat' => $contrat]);
             if (!$contrat) {
                 Log::warning('Réponse recupDetailsContratWeb non successful', ['idContrat' => $idContrat ]);
                 return $this->failure('Impossible de récuperer les details ce contrat pour le moment.');

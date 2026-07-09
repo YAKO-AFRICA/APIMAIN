@@ -104,7 +104,7 @@ class JekoPaymentService
             'X-API-KEY-ID' => $this->apiKeyId,
         ])
             ->timeout(10)
-            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->reference_metier);
+            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->referenceSource);
 
         if (!$response->successful()) {
             return [
@@ -137,6 +137,12 @@ class JekoPaymentService
         // Vérifier la signature (à adapter selon la doc Jeko)
         $expectedSignature = hash_hmac('sha256', $payload, $this->apiKey);
 
+        // Vérifier si la signature n'est pas  correcte ou non avec message de confirmation
+        if (empty($expectedSignature)) {
+            Log::warning('Invalid webhook signature', ['payload' => $payload]);
+            return false;
+        }
+
         return hash_equals($expectedSignature, $signature);
     }
 
@@ -153,7 +159,7 @@ class JekoPaymentService
         }
 
         // Mettre à jour la transaction
-        $paiement = TblPaiement::where('reference_metier', $reference)->first();
+        $paiement = TblPaiement::where('referenceSource', $reference)->first();
 
         if (!$paiement) {
             Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
@@ -162,10 +168,10 @@ class JekoPaymentService
 
         $ancienStatut = $paiement->statut;
         $paiement->statut = $this->convertirStatut($status);
-        $paiement->reponse_jeko = array_merge(
-            $paiement->reponse_jeko ?? [],
-            ['webhook' => $payload, 'date_maj' => now()]
-        );
+        // $paiement->reponse_jeko = array_merge(
+        //     $paiement->reponse_jeko ?? [],
+        //     ['webhook' => $payload, 'date_maj' => now()]
+        // );
         $paiement->save();
 
         Log::info('Transaction mise à jour via webhook', [
@@ -194,6 +200,7 @@ class JekoPaymentService
             'failed' => 'echec',
             'cancelled' => 'annule',
             'refunded' => 'rembourse',
+            'error' => 'erreur',
         ];
 
         return $map[strtolower($status)] ?? $status;

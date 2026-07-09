@@ -138,7 +138,8 @@ class  JekoPaymentController extends Controller
 
         // Log::info('initierPaiement', $request->all());
         $validator = Validator::make($request->all(), [
-            'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
+            'reference' => ['required', 'string', 'max:100'],
+            // 'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
             'currency' => ['nullable', 'string', 'size:3', 'in:' . implode(',', self::DEVISES_SUPPORTEES)],
             'paymentMethod' => ['required', 'string', 'in:' . implode(',', self::METHODES_AUTORISEES)],
             'paymentType' => ['required', 'string', 'in:' . implode(',', self::TYPES_PAIEMENT_AUTORISES)],

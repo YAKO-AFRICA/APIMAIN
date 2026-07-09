@@ -3034,7 +3034,7 @@
             <div class="amount">${formatAmount(amount, this._paymentData.currency)}</div>
           </div>
         </div>
-        <button type="button" class="jeko-link-btn" data-action="go-step-2" style="display:block;text-align:center;margin:14px auto 0;">${t.changeMethod}</button>
+        <!--button type="button" class="jeko-link-btn" data-action="go-step-2" style="display:block;text-align:center;margin:14px auto 0;">${t.changeMethod}</button -->
       `;
         }
 

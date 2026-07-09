@@ -33,11 +33,11 @@
     <div class="meta-grid">
         <div>
             <div class="label">Référence</div>
-            <div class="value">{{ $paiement->codePaiement }}</div>
+            <div class="value">{{ $paiement->codePaiement ?? '' }}</div>
         </div>
         <div>
             <div class="label">Date</div>
-            <div class="value">{{ \Illuminate\Support\Carbon::parse($paiement->datepaiement)->format('d/m/Y H:i') }}</div>
+            <div class="value">{{ $paiement->datepaiement ?? '' }}</div>
         </div>
         <div>
             <div class="label">Moyen de paiement</div>
@@ -45,18 +45,18 @@
         </div>
         <div>
             <div class="label">Statut</div>
-            <div class="value">{{ $paiement->etat == 1 ? 'Payé' : ($paiement->etat == 2 ? 'Échec' : 'En attente') }}</div>
+            <div class="value">Payé</div>
         </div>
         @if($paiement->referenceSource)
         <div>
             <div class="label">Contrat</div>
-            <div class="value">{{ $paiement->referenceSource }}</div>
+            <div class="value">{{ $paiement->referenceSource ?? '' }}</div>
         </div>
         @endif
         @if($paiement->emailpayeur)
         <div>
             <div class="label">Email</div>
-            <div class="value">{{ $paiement->emailpayeur }}</div>
+            <div class="value">{{ $paiement->emailpayeur ?? '' }}</div>
         </div>
         @endif
     </div>

@@ -36,7 +36,9 @@ class TblPaiement extends Model
         'code_produit',
         'idmembre',
         'emailpayeur',
-        'saisiele'
+        'saisiele',
+        'estMigre',
+        'reponse_webhook'
 
     ];
 }

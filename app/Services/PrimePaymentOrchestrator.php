@@ -129,7 +129,7 @@ class PrimePaymentOrchestrator
             // Pour la régularisation, on rattache chaque facture au montant réel de l'impayé sélectionné
             'facturesAGenerer' => array_map(static fn (array $f) => [
                 'prime' => $f['MontantNet'],
-                'referenceOrigine' => $f['idPresentation'],
+                'referenceOrigine' => $f['IdPresentation'],
                 'dateFacturation' => (!empty($f['MaDate'])) ? Carbon::createFromFormat('d/m/Y', $f['MaDate'])->format('Y-m-d H:i:s') : null,
                 'type' => 'PRIME',
             ], $facturesSelectionnees),
@@ -180,8 +180,7 @@ class PrimePaymentOrchestrator
                 'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 1 : 0),
                 'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
                 'emailpayeur' => $donnees['customerEmail'] ?? null,
-                'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),
-                'estMigre' => 0,
+                'saisiele' => Carbon::now()->format('Y-m-d H:i:s')
             ]);
 
             foreach ($preparation['facturesAGenerer'] as $ligne) {
@@ -189,7 +188,7 @@ class PrimePaymentOrchestrator
                     'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
                     'codePaiement' => $referenceInterne,
                     'prime' => $ligne['prime'],
-                    'tblfacture' => $ligne['type'],
+                    'typeFacture' => $ligne['type'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
                     'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
                     // 'typePaiement' => $donnees['paymentType'],

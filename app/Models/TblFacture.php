@@ -15,9 +15,11 @@ class TblFacture extends Model
     public $timestamps = false;
  
     protected $fillable = [
+        'idFacture',
         'idProposition',
         'codePaiement',
         'prime',
+        'typeFacture',
         'etat',
         'dateAjout',
         'typePaiement',

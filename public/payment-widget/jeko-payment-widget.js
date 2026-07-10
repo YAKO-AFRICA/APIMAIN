@@ -36,6 +36,7 @@
  * Avec meilleure gestion d'erreurs, accessibilité et UX
  */
 
+
 // (function (window, document) {
 //     "use strict";
 
@@ -241,7 +242,7 @@
 //       }
 //       .jeko-close:hover { background:rgba(255,255,255,.25); transform:rotate(90deg); }
 
-//       /* ============ STEPPER (redesigned) ============ */
+//       /* ============ STEPPER ============ */
 //       .jeko-steps {
 //         display:flex; align-items:flex-start; gap:0;
 //         position:relative; z-index:1;
@@ -518,8 +519,10 @@
 //             this._isVerifyingContract = false;
 //             this._additionalPrimes = false;
 //             this._additionalPrimesCount = 0;
-//             // step: 1 = contrat, 2 = moyen de paiement, 3 = résumé
+//             // step: 1 = contrat, 2 = moyen de paiement, 3 = résumé (uniquement pour earlyPayment/recoveryPrime)
 //             this._step = 1;
+//             // Indique si le résumé doit être affiché (false pour firstPayment)
+//             this._hasSummaryStep = true;
 //         }
 
 //         /**
@@ -555,6 +558,9 @@
 //             this._additionalPrimes = false;
 //             this._additionalPrimesCount = 0;
 //             this._step = 1;
+            
+//             // Pour firstPayment : pas d'étape résumé
+//             this._hasSummaryStep = this._paymentData.paymentType !== "firstPayment";
 
 //             this._render();
 //             this._isOpen = true;
@@ -598,6 +604,14 @@
 //             this._modal = modal;
 
 //             this._bindEvents();
+
+//             // Pour firstPayment : vérification automatique du contrat si contractId fourni
+//             if (this._paymentData.paymentType === "firstPayment" && this._paymentData.contractId) {
+//                 // Petite attente pour que le DOM soit prêt
+//                 setTimeout(() => {
+//                     this._autoVerifyContract();
+//                 }, 100);
+//             }
 //         }
 
 //         // ---------- Helpers de calcul ----------
@@ -648,6 +662,10 @@
 //             return true;
 //         }
 
+//         _shouldShowSummaryStep() {
+//             return this._hasSummaryStep;
+//         }
+
 //         // ---------- Shell + Stepper ----------
 
 //         _shellTemplate() {
@@ -667,11 +685,20 @@
 
 //         _stepperHeaderTemplate() {
 //             const t = this.options.translations;
-//             const steps = [
-//                 { n: 1, label: t.stepContract },
-//                 { n: 2, label: t.stepMethod },
-//                 { n: 3, label: t.stepSummary },
-//             ];
+            
+//             // Pour firstPayment : seulement 2 étapes
+//             const showSummary = this._shouldShowSummaryStep();
+//             const steps = showSummary
+//                 ? [
+//                     { n: 1, label: t.stepContract },
+//                     { n: 2, label: t.stepMethod },
+//                     { n: 3, label: t.stepSummary },
+//                   ]
+//                 : [
+//                     { n: 1, label: t.stepContract },
+//                     { n: 2, label: t.stepMethod },
+//                   ];
+
 //             return `
 //         <div class="jeko-steps">
 //           ${steps
@@ -686,13 +713,14 @@
 //                       this._step > s.n
 //                           ? `<span class="checkmark">✓</span>`
 //                           : String(s.n);
+//                   const isLast = i === steps.length - 1;
 //                   return `
 //               <div class="jeko-step ${state}">
 //                 <div class="jeko-step-track">
 //                   <div class="jeko-step-circle-wrap">
 //                     <div class="jeko-step-circle">${circleContent}</div>
 //                   </div>
-//                   ${i < steps.length - 1 ? `<div class="jeko-step-line ${this._step > s.n ? "done" : ""}"></div>` : ""}
+//                   ${!isLast ? `<div class="jeko-step-line ${this._step > s.n ? "done" : ""}"></div>` : ""}
 //                 </div>
 //                 <span class="jeko-step-label">${s.label}</span>
 //               </div>
@@ -711,19 +739,35 @@
 
 //         _footerTemplate() {
 //             const t = this.options.translations;
+//             const showSummary = this._shouldShowSummaryStep();
+//             const isFirstPayment = this._paymentData.paymentType === "firstPayment";
+
 //             if (this._step === 1) {
-//                 // Le bouton "vérifier" est dans le corps de step1 ; la navigation avant
-//                 // n'apparaît que lorsque le contrat est validé.
 //                 if (!this._canProceedFromStep1()) return "";
-//                 return `<button type="button" class="jeko-submit" data-action="go-step-2">${t.continueToSummary}</button>`;
+//                 // Pour firstPayment : on passe directement à l'étape 2
+//                 const label = isFirstPayment ? t.submit : t.continueToSummary;
+//                 return `<button type="button" class="jeko-submit" data-action="go-step-2">${label}</button>`;
 //             }
+            
 //             if (this._step === 2) {
-//                 return `
-//           <button type="button" class="jeko-btn-back" data-action="go-step-1">${t.back}</button>
-//           <button type="button" class="jeko-submit" data-action="go-step-3" ${this._canProceedFromStep2() ? "" : "disabled"}>${t.continueToSummary}</button>
-//         `;
+//                 // Pour firstPayment : le bouton "Confirmer et payer" est affiché directement
+//                 if (isFirstPayment) {
+//                     return `
+//                 <button type="button" class="jeko-btn-back" data-action="go-step-1">${t.back}</button>
+//                 <button type="button" class="jeko-submit" data-action="submit-payment" ${this._canProceedFromStep2() ? "" : "disabled"}>${t.confirmAndPay}</button>
+//               `;
+//                 }
+                
+//                 // Pour earlyPayment/recoveryPrime : afficher le résumé
+//                 if (showSummary) {
+//                     return `
+//                 <button type="button" class="jeko-btn-back" data-action="go-step-1">${t.back}</button>
+//                 <button type="button" class="jeko-submit" data-action="go-step-3" ${this._canProceedFromStep2() ? "" : "disabled"}>${t.continueToSummary}</button>
+//               `;
+//                 }
 //             }
-//             if (this._step === 3) {
+            
+//             if (this._step === 3 && showSummary) {
 //                 return `
 //           <button type="button" class="jeko-btn-back" data-action="go-step-2">${t.back}</button>
 //           <button type="button" class="jeko-submit" data-action="submit-payment">${t.confirmAndPay}</button>
@@ -746,6 +790,46 @@
 //         ${this._stepperHeaderTemplate()}
 //       `;
 //             this._bindEvents();
+//         }
+
+//         // ---------- Vérification automatique pour firstPayment ----------
+
+//         async _autoVerifyContract() {
+//             const idContrat = this._paymentData.contractId;
+//             if (!idContrat) return;
+            
+//             // Vérifier que le contrat n'est pas déjà vérifié
+//             if (this._contractInfo) return;
+            
+//             const t = this.options.translations;
+            
+//             try {
+//                 const res = await fetch(this.options.contractCheckEndpoint, {
+//                     method: "POST",
+//                     headers: {
+//                         "Content-Type": "application/json",
+//                         Accept: "application/json",
+//                         ...this.options.headers,
+//                     },
+//                     body: JSON.stringify({
+//                         idContrat,
+//                         paymentType: this._paymentData.paymentType,
+//                     }),
+//                 });
+//                 const data = await res.json();
+
+//                 if (!res.ok || !data.success) {
+//                     this._showGeneralError(data.message || t.error);
+//                     return;
+//                 }
+
+//                 this._contractInfo = data.data;
+//                 this._blocked = false;
+//                 this._refreshBody();
+//             } catch (e) {
+//                 console.error(e);
+//                 this._showGeneralError(t.networkError);
+//             }
 //         }
 
 //         // ---------- Step 1 : contrat ----------
@@ -873,14 +957,19 @@
 
 //         _contractLookupTemplate() {
 //             const t = this.options.translations;
+//             const isFirstPayment = this._paymentData.paymentType === "firstPayment";
+//             const inputDisabled = isFirstPayment ? "disabled-input" : "";
+//             const inputValue = this._paymentData.contractId || "";
+            
 //             return `
 //         <div class="jeko-lookup-icon">📄</div>
+//         ${isFirstPayment ? '<p style="text-align:center;color:#6b7280;font-size:13px;margin:-4px 0 8px;">Vérification automatique du contrat...</p>' : ''}
 //         <div class="jeko-field" data-role="contract">
 //           <label for="jeko-contract">${t.contractIdLabel}</label>
-//           <input id="jeko-contract" class=" ${this._paymentData.paymentType === "firstPayment" ? "disabled-input" : ""}" type="text" placeholder="${t.contractIdPlaceholder}" value="${this._paymentData.contractId || ""}" />
+//           <input id="jeko-contract" class="${inputDisabled}" type="text" placeholder="${t.contractIdPlaceholder}" value="${inputValue}" ${isFirstPayment ? 'disabled' : ''} />
 //           <div class="error-message">${t.requiredField}</div>
 //         </div>
-//         <button type="button" class="jeko-submit" data-action="verify-contract" style="margin:16px 0;width:100%;background:#fff;color:var(--jeko-primary-dark);border:2px solid var(--jeko-primary);box-shadow:none;">${t.verify}</button>
+//         ${!isFirstPayment ? `<button type="button" class="jeko-submit" data-action="verify-contract" style="margin:16px 0;width:100%;background:#fff;color:var(--jeko-primary-dark);border:2px solid var(--jeko-primary);box-shadow:none;">${t.verify}</button>` : ''}
 //       `;
 //         }
 
@@ -925,7 +1014,7 @@
 //       `;
 //         }
 
-//         // ---------- Step 3 : résumé ----------
+//         // ---------- Step 3 : résumé (uniquement pour earlyPayment/recoveryPrime) ----------
 
 //         _step3Template() {
 //             const t = this.options.translations;
@@ -955,7 +1044,6 @@
 //             <div class="amount">${formatAmount(amount, this._paymentData.currency)}</div>
 //           </div>
 //         </div>
-//         <!--button type="button" class="jeko-link-btn" data-action="go-step-2" style="display:block;text-align:center;margin:14px auto 0;">${t.changeMethod}</button -->
 //       `;
 //         }
 
@@ -982,8 +1070,13 @@
 //                         .forEach((b) => b.setAttribute("aria-pressed", "false"));
 //                     btn.setAttribute("aria-pressed", "true");
 //                     this._selectedMethod = btn.dataset.method;
-//                     const cont = modal.querySelector('[data-action="go-step-3"]');
-//                     if (cont) cont.disabled = !this._canProceedFromStep2();
+                    
+//                     // Mise à jour des boutons d'action
+//                     const submitBtn = modal.querySelector('[data-action="submit-payment"]');
+//                     if (submitBtn) submitBtn.disabled = !this._canProceedFromStep2();
+                    
+//                     const contBtn = modal.querySelector('[data-action="go-step-3"]');
+//                     if (contBtn) contBtn.disabled = !this._canProceedFromStep2();
 //                 });
 //             });
 
@@ -1024,6 +1117,7 @@
 //                 btn.addEventListener("click", () => {
 //                     this._paymentData.paymentType = btn.dataset.switch;
 //                     this._blocked = false;
+//                     this._hasSummaryStep = this._paymentData.paymentType !== "firstPayment";
 //                     this._refreshBody();
 //                 });
 //             });
@@ -1039,7 +1133,7 @@
 
 //             const verifyBtn = modal.querySelector('[data-action="verify-contract"]');
 //             if (verifyBtn)
-//                 verifyBtn.addEventListener("click", () => this._verifyContract());
+//                 verifyBtn.addEventListener("click", () => this._manualVerifyContract());
 
 //             const goStep2 = modal.querySelector('[data-action="go-step-2"]');
 //             if (goStep2)
@@ -1065,7 +1159,7 @@
 //                 submitBtn.addEventListener("click", () => this._handleSubmit());
 //         }
 
-//         async _verifyContract() {
+//         async _manualVerifyContract() {
 //             if (this._isVerifyingContract) return;
 //             this._isVerifyingContract = true;
 
@@ -1274,7 +1368,6 @@
 //                 if (this.options.callbacks.onSuccess)
 //                     this.options.callbacks.onSuccess(redirectUrl, data);
 //                 setTimeout(() => {
-//                     // Fermer le modal
 //                     this.close();
 //                     window.open(redirectUrl, "_blank");
 //                 }, 1500);
@@ -1437,6 +1530,7 @@
             summaryMethod: "Moyen de paiement",
             summaryAmount: "Montant à payer",
             changeMethod: "Modifier",
+            loadingContract: "Chargement des informations du contrat...",
         },
         callbacks: {
             onSuccess: null,
@@ -1510,7 +1604,7 @@
       }
       .jeko-close:hover { background:rgba(255,255,255,.25); transform:rotate(90deg); }
 
-      /* ============ STEPPER ============ */
+      /* ============ STEPPER (redesigned) ============ */
       .jeko-steps {
         display:flex; align-items:flex-start; gap:0;
         position:relative; z-index:1;
@@ -1787,10 +1881,8 @@
             this._isVerifyingContract = false;
             this._additionalPrimes = false;
             this._additionalPrimesCount = 0;
-            // step: 1 = contrat, 2 = moyen de paiement, 3 = résumé (uniquement pour earlyPayment/recoveryPrime)
+            // step: 1 = contrat, 2 = moyen de paiement, 3 = résumé
             this._step = 1;
-            // Indique si le résumé doit être affiché (false pour firstPayment)
-            this._hasSummaryStep = true;
         }
 
         /**
@@ -1826,15 +1918,18 @@
             this._additionalPrimes = false;
             this._additionalPrimesCount = 0;
             this._step = 1;
-            
-            // Pour firstPayment : pas d'étape résumé
-            this._hasSummaryStep = this._paymentData.paymentType !== "firstPayment";
 
             this._render();
             this._isOpen = true;
             document.addEventListener("keydown", this._escHandler);
             if (this.options.callbacks.onOpen)
                 this.options.callbacks.onOpen(this._paymentData);
+
+            // Pour firstPayment : la vérification du contrat est automatique,
+            // l'utilisateur n'a pas à saisir/soumettre un identifiant.
+            if (this._paymentData.paymentType === "firstPayment") {
+                this._autoVerifyFirstPayment();
+            }
         }
 
         close() {
@@ -1872,14 +1967,6 @@
             this._modal = modal;
 
             this._bindEvents();
-
-            // Pour firstPayment : vérification automatique du contrat si contractId fourni
-            if (this._paymentData.paymentType === "firstPayment" && this._paymentData.contractId) {
-                // Petite attente pour que le DOM soit prêt
-                setTimeout(() => {
-                    this._autoVerifyContract();
-                }, 100);
-            }
         }
 
         // ---------- Helpers de calcul ----------
@@ -1908,6 +1995,10 @@
             return 0;
         }
 
+        _isFirstPayment() {
+            return this._paymentData.paymentType === "firstPayment";
+        }
+
         _canProceedFromStep1() {
             const type = this._paymentData.paymentType;
             if (!this._contractInfo) return false;
@@ -1930,10 +2021,6 @@
             return true;
         }
 
-        _shouldShowSummaryStep() {
-            return this._hasSummaryStep;
-        }
-
         // ---------- Shell + Stepper ----------
 
         _shellTemplate() {
@@ -1951,22 +2038,25 @@
       `;
         }
 
-        _stepperHeaderTemplate() {
+        // Pour firstPayment, le parcours n'a que 2 étapes utiles (Contrat -> Paiement),
+        // il n'y a pas d'étape "Résumé" séparée.
+        _visibleSteps() {
             const t = this.options.translations;
-            
-            // Pour firstPayment : seulement 2 étapes
-            const showSummary = this._shouldShowSummaryStep();
-            const steps = showSummary
-                ? [
+            if (this._isFirstPayment()) {
+                return [
                     { n: 1, label: t.stepContract },
                     { n: 2, label: t.stepMethod },
-                    { n: 3, label: t.stepSummary },
-                  ]
-                : [
-                    { n: 1, label: t.stepContract },
-                    { n: 2, label: t.stepMethod },
-                  ];
+                ];
+            }
+            return [
+                { n: 1, label: t.stepContract },
+                { n: 2, label: t.stepMethod },
+                { n: 3, label: t.stepSummary },
+            ];
+        }
 
+        _stepperHeaderTemplate() {
+            const steps = this._visibleSteps();
             return `
         <div class="jeko-steps">
           ${steps
@@ -1981,14 +2071,13 @@
                       this._step > s.n
                           ? `<span class="checkmark">✓</span>`
                           : String(s.n);
-                  const isLast = i === steps.length - 1;
                   return `
               <div class="jeko-step ${state}">
                 <div class="jeko-step-track">
                   <div class="jeko-step-circle-wrap">
                     <div class="jeko-step-circle">${circleContent}</div>
                   </div>
-                  ${!isLast ? `<div class="jeko-step-line ${this._step > s.n ? "done" : ""}"></div>` : ""}
+                  ${i < steps.length - 1 ? `<div class="jeko-step-line ${this._step > s.n ? "done" : ""}"></div>` : ""}
                 </div>
                 <span class="jeko-step-label">${s.label}</span>
               </div>
@@ -2007,35 +2096,29 @@
 
         _footerTemplate() {
             const t = this.options.translations;
-            const showSummary = this._shouldShowSummaryStep();
-            const isFirstPayment = this._paymentData.paymentType === "firstPayment";
-
             if (this._step === 1) {
+                // Pour firstPayment, la vérification est automatique : tant qu'elle est
+                // en cours ou pas encore faite, on n'affiche pas de bouton "Continuer".
+                if (this._isFirstPayment()) {
+                    if (!this._contractInfo) return "";
+                    return `<button type="button" class="jeko-submit" data-action="go-step-2">${t.continueToSummary}</button>`;
+                }
                 if (!this._canProceedFromStep1()) return "";
-                // Pour firstPayment : on passe directement à l'étape 2
-                const label = isFirstPayment ? t.submit : t.continueToSummary;
-                return `<button type="button" class="jeko-submit" data-action="go-step-2">${label}</button>`;
+                return `<button type="button" class="jeko-submit" data-action="go-step-2">${t.continueToSummary}</button>`;
             }
-            
             if (this._step === 2) {
-                // Pour firstPayment : le bouton "Confirmer et payer" est affiché directement
-                if (isFirstPayment) {
-                    return `
-                <button type="button" class="jeko-btn-back" data-action="go-step-1">${t.back}</button>
-                <button type="button" class="jeko-submit" data-action="submit-payment" ${this._canProceedFromStep2() ? "" : "disabled"}>${t.confirmAndPay}</button>
-              `;
-                }
-                
-                // Pour earlyPayment/recoveryPrime : afficher le résumé
-                if (showSummary) {
-                    return `
-                <button type="button" class="jeko-btn-back" data-action="go-step-1">${t.back}</button>
-                <button type="button" class="jeko-submit" data-action="go-step-3" ${this._canProceedFromStep2() ? "" : "disabled"}>${t.continueToSummary}</button>
-              `;
-                }
+                const confirmLabel = this._isFirstPayment()
+                    ? t.confirmAndPay
+                    : t.continueToSummary;
+                const confirmAction = this._isFirstPayment()
+                    ? "submit-payment"
+                    : "go-step-3";
+                return `
+          <button type="button" class="jeko-btn-back" data-action="go-step-1">${t.back}</button>
+          <button type="button" class="jeko-submit" data-action="${confirmAction}" ${this._canProceedFromStep2() ? "" : "disabled"}>${confirmLabel}</button>
+        `;
             }
-            
-            if (this._step === 3 && showSummary) {
+            if (this._step === 3) {
                 return `
           <button type="button" class="jeko-btn-back" data-action="go-step-2">${t.back}</button>
           <button type="button" class="jeko-submit" data-action="submit-payment">${t.confirmAndPay}</button>
@@ -2060,17 +2143,13 @@
             this._bindEvents();
         }
 
-        // ---------- Vérification automatique pour firstPayment ----------
+        // ---------- Vérification automatique (firstPayment) ----------
 
-        async _autoVerifyContract() {
-            const idContrat = this._paymentData.contractId;
-            if (!idContrat) return;
-            
-            // Vérifier que le contrat n'est pas déjà vérifié
-            if (this._contractInfo) return;
-            
+        async _autoVerifyFirstPayment() {
+            this._isVerifyingContract = true;
+            this._refreshBody();
+
             const t = this.options.translations;
-            
             try {
                 const res = await fetch(this.options.contractCheckEndpoint, {
                     method: "POST",
@@ -2080,22 +2159,31 @@
                         ...this.options.headers,
                     },
                     body: JSON.stringify({
-                        idContrat,
+                        idContrat: this._paymentData.contractId || null,
                         paymentType: this._paymentData.paymentType,
+                        reference: this._paymentData.reference,
                     }),
                 });
                 const data = await res.json();
 
                 if (!res.ok || !data.success) {
+                    this._isVerifyingContract = false;
+                    this._refreshBody();
                     this._showGeneralError(data.message || t.error);
                     return;
                 }
 
                 this._contractInfo = data.data;
-                this._blocked = false;
+                if (data.data?.idProposition || data.data?.contratIdWeb) {
+                    this._paymentData.contractId =
+                        data.data.idProposition || data.data.contratIdWeb;
+                }
+                this._isVerifyingContract = false;
                 this._refreshBody();
             } catch (e) {
                 console.error(e);
+                this._isVerifyingContract = false;
+                this._refreshBody();
                 this._showGeneralError(t.networkError);
             }
         }
@@ -2106,12 +2194,15 @@
             const t = this.options.translations;
             const type = this._paymentData.paymentType;
 
-            if (!this._contractInfo) {
-                return this._contractLookupTemplate();
+            if (type === "firstPayment") {
+                if (this._isVerifyingContract || !this._contractInfo) {
+                    return this._contractLoadingTemplate();
+                }
+                return this._firstPaymentTemplate();
             }
 
-            if (type === "firstPayment") {
-                return this._firstPaymentTemplate();
+            if (!this._contractInfo) {
+                return this._contractLookupTemplate();
             }
 
             if (type === "earlyPayment") {
@@ -2160,6 +2251,16 @@
             }
 
             return "";
+        }
+
+        _contractLoadingTemplate() {
+            const t = this.options.translations;
+            return `
+        <div class="jeko-state" style="min-height:180px;padding:30px 20px;">
+          <div class="jeko-spinner"></div>
+          <p>${t.loadingContract}</p>
+        </div>
+      `;
         }
 
         _firstPaymentTemplate() {
@@ -2225,19 +2326,14 @@
 
         _contractLookupTemplate() {
             const t = this.options.translations;
-            const isFirstPayment = this._paymentData.paymentType === "firstPayment";
-            const inputDisabled = isFirstPayment ? "disabled-input" : "";
-            const inputValue = this._paymentData.contractId || "";
-            
             return `
         <div class="jeko-lookup-icon">📄</div>
-        ${isFirstPayment ? '<p style="text-align:center;color:#6b7280;font-size:13px;margin:-4px 0 8px;">Vérification automatique du contrat...</p>' : ''}
         <div class="jeko-field" data-role="contract">
           <label for="jeko-contract">${t.contractIdLabel}</label>
-          <input id="jeko-contract" class="${inputDisabled}" type="text" placeholder="${t.contractIdPlaceholder}" value="${inputValue}" ${isFirstPayment ? 'disabled' : ''} />
+          <input id="jeko-contract" type="text" placeholder="${t.contractIdPlaceholder}" value="${this._paymentData.contractId || ""}" />
           <div class="error-message">${t.requiredField}</div>
         </div>
-        ${!isFirstPayment ? `<button type="button" class="jeko-submit" data-action="verify-contract" style="margin:16px 0;width:100%;background:#fff;color:var(--jeko-primary-dark);border:2px solid var(--jeko-primary);box-shadow:none;">${t.verify}</button>` : ''}
+        <button type="button" class="jeko-submit" data-action="verify-contract" style="margin:16px 0;width:100%;background:#fff;color:var(--jeko-primary-dark);border:2px solid var(--jeko-primary);box-shadow:none;">${t.verify}</button>
       `;
         }
 
@@ -2282,7 +2378,7 @@
       `;
         }
 
-        // ---------- Step 3 : résumé (uniquement pour earlyPayment/recoveryPrime) ----------
+        // ---------- Step 3 : résumé (non utilisé pour firstPayment) ----------
 
         _step3Template() {
             const t = this.options.translations;
@@ -2338,13 +2434,10 @@
                         .forEach((b) => b.setAttribute("aria-pressed", "false"));
                     btn.setAttribute("aria-pressed", "true");
                     this._selectedMethod = btn.dataset.method;
-                    
-                    // Mise à jour des boutons d'action
-                    const submitBtn = modal.querySelector('[data-action="submit-payment"]');
-                    if (submitBtn) submitBtn.disabled = !this._canProceedFromStep2();
-                    
-                    const contBtn = modal.querySelector('[data-action="go-step-3"]');
-                    if (contBtn) contBtn.disabled = !this._canProceedFromStep2();
+                    const cont = modal.querySelector(
+                        '[data-action="go-step-3"], [data-action="submit-payment"]',
+                    );
+                    if (cont) cont.disabled = !this._canProceedFromStep2();
                 });
             });
 
@@ -2385,7 +2478,6 @@
                 btn.addEventListener("click", () => {
                     this._paymentData.paymentType = btn.dataset.switch;
                     this._blocked = false;
-                    this._hasSummaryStep = this._paymentData.paymentType !== "firstPayment";
                     this._refreshBody();
                 });
             });
@@ -2401,12 +2493,15 @@
 
             const verifyBtn = modal.querySelector('[data-action="verify-contract"]');
             if (verifyBtn)
-                verifyBtn.addEventListener("click", () => this._manualVerifyContract());
+                verifyBtn.addEventListener("click", () => this._verifyContract());
 
             const goStep2 = modal.querySelector('[data-action="go-step-2"]');
             if (goStep2)
                 goStep2.addEventListener("click", () => {
-                    if (this._step === 1 && !this._canProceedFromStep1()) return;
+                    if (this._step === 1 && !this._isFirstPayment() && !this._canProceedFromStep1())
+                        return;
+                    if (this._step === 1 && this._isFirstPayment() && !this._contractInfo)
+                        return;
                     this._goToStep(2);
                 });
 
@@ -2424,10 +2519,13 @@
 
             const submitBtn = modal.querySelector('[data-action="submit-payment"]');
             if (submitBtn)
-                submitBtn.addEventListener("click", () => this._handleSubmit());
+                submitBtn.addEventListener("click", () => {
+                    if (submitBtn.disabled) return;
+                    this._handleSubmit();
+                });
         }
 
-        async _manualVerifyContract() {
+        async _verifyContract() {
             if (this._isVerifyingContract) return;
             this._isVerifyingContract = true;
 
@@ -2636,6 +2734,7 @@
                 if (this.options.callbacks.onSuccess)
                     this.options.callbacks.onSuccess(redirectUrl, data);
                 setTimeout(() => {
+                    // Fermer le modal
                     this.close();
                     window.open(redirectUrl, "_blank");
                 }, 1500);

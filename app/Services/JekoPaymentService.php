@@ -148,24 +148,41 @@ class JekoPaymentService
 
     public function validerWebhook(Request $request): bool
     {
+        // Log tous les headers pour déboguer
+        Log::info('Tous les headers reçus', [
+            'headers' => $request->headers->all()
+        ]);
+
         // Essayer plusieurs noms de headers possibles
         $signature = $request->header('X-Jeko-Signature') 
             ?? $request->header('X-JEKO-Signature')
             ?? $request->header('X-Signature')
+            ?? $request->header('signature')
+            ?? $request->header('Signature')
             ?? '';
 
         $payload = $request->getContent();
 
+        Log::info('Webhook validation', [
+            'signature_trouvee' => $signature,
+            'payload_length' => strlen($payload),
+            'webhook_secret_present' => !empty($this->webhookSecret)
+        ]);
+
         if (empty($signature) || empty($payload)) {
+            Log::warning('Signature ou payload vide', [
+                'signature_empty' => empty($signature),
+                'payload_empty' => empty($payload)
+            ]);
             return false;
         }
 
         $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
 
-        Log::info('Validation webhook', [
-            'headers' => $request->headers->all(),
+        Log::info('Comparaison signatures', [
             'signature_recue' => $signature,
-            'signature_calculee' => $expectedSignature
+            'signature_calculee' => $expectedSignature,
+            'correspond' => hash_equals($expectedSignature, $signature)
         ]);
 
         return hash_equals($expectedSignature, $signature);

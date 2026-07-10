@@ -143,7 +143,7 @@ class  JekoPaymentController extends Controller
             'paymentMethod' => ['required', 'string', 'in:' . implode(',', self::METHODES_AUTORISEES)],
             'paymentType' => ['required', 'string', 'in:' . implode(',', self::TYPES_PAIEMENT_AUTORISES)],
  
-            'contractId' => ['nullable', 'string', 'max:100'],
+            'contractId' => ['nullable', 'max:100'],
             'numberOfPrimes' => ['nullable', 'integer', 'min:1', 'max:60'],
             'selectedInvoiceIds' => ['nullable', 'array'],
             'selectedInvoiceIds.*' => ['string', 'max:50'],

@@ -129,7 +129,7 @@
         currency: 'XOF',
         timeout: 30000,
         headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+          'X-JEKO-Signature': document.querySelector('meta[name="csrf-token"]')?.content || '',
         },
         callbacks: {
           onSuccess: (redirectUrl, data) => console.log('✅ Paiement initialisé', { redirectUrl, data }),

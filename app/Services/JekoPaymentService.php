@@ -126,22 +126,47 @@ class JekoPaymentService
     /**
      * Valide le webhook Jeko
      */
+    // public function validerWebhook(Request $request): bool
+    // {
+    //     // Récupérer la signature depuis les headers
+    //     $signature = $request->header('X-Jeko-Signature');
+    //     $payload = $request->getContent();
+
+    //     Log::info('Webhook signature', ['signature' => $signature, 'payload' => $payload]);
+
+    //     if (empty($signature) || empty($payload)) {
+    //         return false;
+    //     }
+
+    //     // Vérifier la signature (à adapter selon la doc Jeko)
+    //     $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
+
+    //     Log::info('Webhook signature', ['signature' => $signature, 'expectedSignature' => $expectedSignature]);
+
+    //     return hash_equals($expectedSignature, $signature);
+    // }
+
     public function validerWebhook(Request $request): bool
     {
-        // Récupérer la signature depuis les headers
-        $signature = $request->header('X-Jeko-Signature');
-        $payload = $request->getContent();
+        // Essayer plusieurs noms de headers possibles
+        $signature = $request->header('X-Jeko-Signature') 
+            ?? $request->header('X-JEKO-Signature')
+            ?? $request->header('X-Signature')
+            ?? '';
 
-        Log::info('Webhook signature', ['signature' => $signature, 'payload' => $payload]);
+        $payload = $request->getContent();
 
         if (empty($signature) || empty($payload)) {
             return false;
         }
 
-        // Vérifier la signature (à adapter selon la doc Jeko)
         $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
 
-        Log::info('Webhook signature', ['signature' => $signature, 'expectedSignature' => $expectedSignature]);
+        Log::info('Validation webhook', [
+            'headers' => $request->headers->all(),
+            'signature_recue' => $signature,
+            'signature_calculee' => $expectedSignature
+        ]);
 
         return hash_equals($expectedSignature, $signature);
     }

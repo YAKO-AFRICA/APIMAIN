@@ -154,12 +154,7 @@ class JekoPaymentService
         ]);
 
         // Essayer plusieurs noms de headers possibles
-        $signature = $request->header('X-Jeko-Signature') 
-            ?? $request->header('X-JEKO-Signature')
-            ?? $request->header('X-Signature')
-            ?? $request->header('signature')
-            ?? $request->header('Signature')
-            ?? '';
+        $signature = $request->header('jeko-signature');
 
         $payload = $request->getContent();
 

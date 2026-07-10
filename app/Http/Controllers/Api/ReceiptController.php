@@ -18,23 +18,30 @@ class ReceiptController extends Controller
 {
     public function show(string $referenceInterne): View
     {
-        $paiement = TblPaiement::where('codePaiement', $referenceInterne)->firstOrFail();
-
-        $factures = TblFacture::where('codePaiement', $referenceInterne)
-            ->orderBy('dateAjout')
-            ->get();
-
-        // $libellesType = [
-        //     'firstPayment' => 'Premier paiement',
-        //     'earlyPayment' => 'Paiement anticipé',
-        //     'recoveryPrime' => 'Régularisation de primes',
-        // ];
+        $libellesTypeFacture = [
+            'PRIME' => 'Prime principale',
+            'FRAIS_ADHESION' => 'Frais d\'adhésion',
+        ];
 
         $libellesType = [
             1 => 'Premier paiement',
             2 => 'Paiement anticipé',
             3 => 'Régularisation de primes',
         ];
+        $paiement = TblPaiement::where('codePaiement', $referenceInterne)->firstOrFail();
+
+        $factures = TblFacture::where('codePaiement', $referenceInterne)
+            ->orderBy('dateAjout')
+            ->get()
+            ->map(function ($facture) use ($libellesTypeFacture) {
+                $facture->libelleTypeFacture =
+                    $libellesTypeFacture[$facture->typeFacture]
+                    ?? $facture->typeFacture;
+
+                return $facture;
+            });
+
+        
 
         return view('paiement.recu', [
             'paiement' => $paiement,

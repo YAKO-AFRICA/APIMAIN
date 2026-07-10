@@ -291,6 +291,7 @@
                 <th style="width:35%;">Détail</th>
                 <th style="width:30%;">Référence</th>
                 <th style="width:35%; text-align:right;">Montant</th>
+                <th style="width:35%; text-align:right;">Type</th>
             </tr>
         </thead>
         <tbody>
@@ -305,18 +306,21 @@
                     @else
                         <span style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size:16px;">📄</span>
-                            Prime n°{{ $i + 1 }}
+                            Facture n°{{ $idFacture ?? '' }}
                         </span>
                     @endif
                 </td>
                 <td style="font-size:12px; color:#6b7280;">
                     {{ $facture->referenceSource ?: '—' }}
-                    @if($facture->idFacture)
+                    <!-- @if($facture->idFacture)
                         <div style="font-size:11px; color:#9ca3af;">{{ $facture->idFacture }}</div>
-                    @endif
+                    @endif -->
                 </td>
                 <td style="text-align:right; font-weight:600;">
-                    {{ number_format($facture->prime, 0, ',', ' ') }} XOF
+                    {{ number_format($facture->prime, 0, ',', ' ') }} F CFA
+                </td>
+                <td style="text-align:right; font-weight:600;">
+                    {{ $facture->libelleTypeFacture ?? '' }}
                 </td>
             </tr>
             @empty
@@ -357,13 +361,6 @@
             </svg>
             Imprimer / Télécharger
         </button>
-        <!-- par besoin -->
-        <!-- <a href="{{ route('dashboard') }}" class="btn btn-secondary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            Retour
-        </a> -->
     </div>
 
     <!-- Footer -->

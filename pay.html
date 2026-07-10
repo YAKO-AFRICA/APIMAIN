@@ -288,9 +288,9 @@
     <table>
         <thead>
             <tr>
-                <th style="width:35%;">Détail</th>
-                <th style="width:30%;">Référence</th>
-                <th style="width:35%; text-align:right;">Montant</th>
+                <th style="width:30%;">Détail</th>
+                <th style="width:35%;">Référence</th>
+                <th style="width:30%; text-align:right;">Montant</th>
                 <th style="width:35%; text-align:right;">Type</th>
             </tr>
         </thead>
@@ -319,7 +319,7 @@
                 <td style="text-align:right; font-weight:600;">
                     {{ number_format($facture->prime, 0, ',', ' ') }} F CFA
                 </td>
-                <td style="text-align:right; font-weight:600;">
+                <td style="text-align:center; font-weight:600;">
                     {{ $facture->libelleTypeFacture ?? '' }}
                 </td>
             </tr>

@@ -24,10 +24,16 @@ class ReceiptController extends Controller
             ->orderBy('dateAjout')
             ->get();
 
+        // $libellesType = [
+        //     'firstPayment' => 'Premier paiement',
+        //     'earlyPayment' => 'Paiement anticipé',
+        //     'recoveryPrime' => 'Régularisation de primes',
+        // ];
+
         $libellesType = [
-            'firstPayment' => 'Premier paiement',
-            'earlyPayment' => 'Paiement anticipé',
-            'recoveryPrime' => 'Régularisation de primes',
+            1 => 'Premier paiement',
+            2 => 'Paiement anticipé',
+            3 => 'Régularisation de primes',
         ];
 
         return view('paiement.recu', [

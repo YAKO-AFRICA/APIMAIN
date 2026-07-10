@@ -126,59 +126,40 @@ class JekoPaymentService
     /**
      * Valide le webhook Jeko
      */
-    // public function validerWebhook(Request $request): bool
-    // {
-    //     // Récupérer la signature depuis les headers
-    //     $signature = $request->header('X-Jeko-Signature');
-    //     $payload = $request->getContent();
-
-    //     Log::info('Webhook signature', ['signature' => $signature, 'payload' => $payload]);
-
-    //     if (empty($signature) || empty($payload)) {
-    //         return false;
-    //     }
-
-    //     // Vérifier la signature (à adapter selon la doc Jeko)
-    //     $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
-
-    //     Log::info('Webhook signature', ['signature' => $signature, 'expectedSignature' => $expectedSignature]);
-
-    //     return hash_equals($expectedSignature, $signature);
-    // }
 
     public function validerWebhook(Request $request): bool
     {
         // Log tous les headers pour déboguer
-        Log::info('Tous les headers reçus', [
-            'headers' => $request->headers->all()
-        ]);
+        // Log::info('Tous les headers reçus', [
+        //     'headers' => $request->headers->all()
+        // ]);
 
         // Essayer plusieurs noms de headers possibles
         $signature = $request->header('jeko-signature');
 
         $payload = $request->getContent();
 
-        Log::info('Webhook validation', [
-            'signature_trouvee' => $signature,
-            'payload_length' => strlen($payload),
-            'webhook_secret_present' => !empty($this->webhookSecret)
-        ]);
+        // Log::info('Webhook validation', [
+        //     'signature_trouvee' => $signature,
+        //     'payload_length' => strlen($payload),
+        //     'webhook_secret_present' => !empty($this->webhookSecret)
+        // ]);
 
         if (empty($signature) || empty($payload)) {
-            Log::warning('Signature ou payload vide', [
-                'signature_empty' => empty($signature),
-                'payload_empty' => empty($payload)
-            ]);
+            // Log::warning('Signature ou payload vide', [
+            //     'signature_empty' => empty($signature),
+            //     'payload_empty' => empty($payload)
+            // ]);
             return false;
         }
 
         $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
 
-        Log::info('Comparaison signatures', [
-            'signature_recue' => $signature,
-            'signature_calculee' => $expectedSignature,
-            'correspond' => hash_equals($expectedSignature, $signature)
-        ]);
+        // Log::info('Comparaison signatures', [
+        //     'signature_recue' => $signature,
+        //     'signature_calculee' => $expectedSignature,
+        //     'correspond' => hash_equals($expectedSignature, $signature)
+        // ]);
 
         return hash_equals($expectedSignature, $signature);
     }

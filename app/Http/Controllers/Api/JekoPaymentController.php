@@ -360,8 +360,8 @@ class  JekoPaymentController extends Controller
             $paiement->etat = 2;
             $paiement->payment_status = $statutJeko;
             $paiement->telpaiement = $payload['counterpartIdentifier'] ?? null;
-            $paiement->paid_sum = $payload['amount'] ?? null;
-            $paiement->paid_amount = $payload['amount']['amount'] ?? null;
+            $paiement->paid_sum = (int) $payload['amount']['amount'] / 100 ?? null;
+            $paiement->paid_amount = (int) $payload['amount']['amount'] / 100 ?? null;
             $paiement->payment_token = $payload['transactionDetails']['paymentLinkId'] ?? null;
             $paiement->command_number = $payload['transactionDetails']['reference'] ?? null;
             $paiement->payment_validation_date = Carbon::now()->format('Y-m-d H:i:s');

@@ -165,6 +165,7 @@ class PrimePaymentOrchestrator
     public function enregistrer(array $donnees, array $preparation, string $referenceInterne, array $resultatJeko): TblPaiement
     {
         return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko) {
+            $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
             $paiement = TblPaiement::create([
                 'codePaiement' => $referenceInterne,
                 'montant' => $preparation['montantTotal'],
@@ -172,8 +173,7 @@ class PrimePaymentOrchestrator
                 'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),
                 'payment_mode' => $donnees['paymentMethod'],
                 'payment_status' => $resultatJeko['status'] ?? 'pending',
-                // 'payment_token' => $resultatJeko['paymentId'] ?? null,
-                // 'typePaiement' => $donnees['paymentType'],
+                'typePaiement' => $typePaiement,
                 'idproposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
                 'typeReference' => $donnees['paymentType'],
                 'referenceSource' => $preparation['referenceSource'],
@@ -191,7 +191,7 @@ class PrimePaymentOrchestrator
                     'typeFacture' => $ligne['type'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
                     'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
-                    // 'typePaiement' => $donnees['paymentType'],
+                    'typePaiement' => $typePaiement, 
                     'referenceSource' => $ligne['referenceOrigine'],
                     'idcontrat' => $donnees['contractId'] ?? $donnees['idProposition'] ?? null,
                     'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),
@@ -200,5 +200,18 @@ class PrimePaymentOrchestrator
 
             return $paiement;
         });
+    }
+
+
+    /**
+     * Convention firstPayment : 1 = earlyPayment: 2, recoveryPrime: 3.
+     */
+    private function mapperTypePaiement(string $typePaiement): int // 1 = firstPayment, 2 = earlyPayment, 3 = recoveryPrime): int
+    {
+        return match ($typePaiement) {
+            'firstPayment' => 1,
+            'earlyPayment' => 2,
+            'recoveryPrime' => 3,
+        };
     }
 }

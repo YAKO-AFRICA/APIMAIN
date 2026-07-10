@@ -143,7 +143,7 @@ class PrimePaymentOrchestrator
             $lignes[] = [
                 'prime' => $primeUnitaire,
                 // 'prime' => $primeUnitaire + ($i === 0 ? $fraisAdhesion : 0),
-                'referenceOrigine' => 'REFWEB' . date('Ymd') . date('His'). '-'. rand(1, 9999),
+                'referenceOrigine' => 'REFWEB-' . date('Ymd') . date('His'). '-'. rand(1, 9999),
                 'dateFacturation' => Carbon::now()->format('Y-m-d H:i:s'),
                 'type' => 'PRIME',
             ];
@@ -151,7 +151,7 @@ class PrimePaymentOrchestrator
         if($fraisAdhesion > 0) {
             $lignes[]= [
                 'prime' => $fraisAdhesion,
-                'referenceOrigine' => 'REFWEB' . date('Ymd') . date('His'). '-'. rand(1, 9999),
+                'referenceOrigine' => 'REFWEB-' . date('Ymd') . date('His'). '-'. rand(1, 9999),
                 'dateFacturation' => Carbon::now()->format('Y-m-d H:i:s'),
                 'type' => 'FRAIS_ADHESION',
             ];

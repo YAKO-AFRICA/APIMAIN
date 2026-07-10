@@ -130,6 +130,8 @@ class JekoPaymentService
         $signature = $request->header('X-Jeko-Signature');
         $payload = $request->getContent();
 
+        Log::info('Webhook signature', ['signature' => $signature, 'payload' => $payload]);
+
         if (empty($signature) || empty($payload)) {
             return false;
         }
@@ -137,11 +139,13 @@ class JekoPaymentService
         // Vérifier la signature (à adapter selon la doc Jeko)
         $expectedSignature = hash_hmac('sha256', $payload, $this->apiKey);
 
-        // Vérifier si la signature n'est pas  correcte ou non avec message de confirmation
-        if (empty($expectedSignature)) {
-            Log::warning('Invalid webhook signature', ['payload' => $payload]);
-            return false;
-        }
+        Log::info('Webhook signature', ['signature' => $signature, 'expectedSignature' => $expectedSignature]);
+
+        // // Vérifier si la signature n'est pas  correcte ou non avec message de confirmation
+        // if (empty($expectedSignature)) {
+        //     Log::warning('Invalid webhook signature', ['payload' => $payload]);
+        //     return false;
+        // }
 
         return hash_equals($expectedSignature, $signature);
     }
@@ -149,43 +153,43 @@ class JekoPaymentService
     /**
      * Traite le webhook Jeko
      */
-    // public function traiterWebhook(array $payload): ?array
-    // {
-    //     $reference = $payload['reference'] ?? null;
-    //     $status = $payload['status'] ?? null;
+    public function traiterWebhook(array $payload): ?array
+    {
+        $reference = $payload['reference'] ?? null;
+        $status = $payload['status'] ?? null;
 
-    //     if (!$reference || !$status) {
-    //         return null;
-    //     }
+        if (!$reference || !$status) {
+            return null;
+        }
 
-    //     // Mettre à jour la transaction
-    //     $paiement = TblPaiement::where('referenceSource', $reference)->first();
+        // Mettre à jour la transaction
+        $paiement = TblPaiement::where('referenceSource', $reference)->first();
 
-    //     if (!$paiement) {
-    //         Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
-    //         return null;
-    //     }
+        if (!$paiement) {
+            Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
+            return null;
+        }
 
-    //     $ancienStatut = $paiement->statut;
-    //     $paiement->statut = $this->convertirStatut($status);
-    //     $paiement->reponse_webhook = array_merge(
-    //         $paiement->reponse_webhook ?? [],
-    //         ['webhook' => $payload, 'date_maj' => now()]
-    //     );
-    //     $paiement->save();
+        $ancienStatut = $paiement->statut;
+        $paiement->statut = $this->convertirStatut($status);
+        $paiement->reponse_webhook = array_merge(
+            $paiement->reponse_webhook ?? [],
+            ['webhook' => $payload, 'date_maj' => now()]
+        );
+        $paiement->save();
 
-    //     Log::info('Transaction mise à jour via webhook', [
-    //         'reference' => $reference,
-    //         'ancien_statut' => $ancienStatut,
-    //         'nouveau_statut' => $paiement->statut,
-    //     ]);
+        Log::info('Transaction mise à jour via webhook', [
+            'reference' => $reference,
+            'ancien_statut' => $ancienStatut,
+            'nouveau_statut' => $paiement->statut,
+        ]);
 
-    //     return [
-    //         'reference' => $reference,
-    //         'ancien_statut' => $ancienStatut,
-    //         'nouveau_statut' => $paiement->statut,
-    //     ];
-    // }
+        return [
+            'reference' => $reference,
+            'ancien_statut' => $ancienStatut,
+            'nouveau_statut' => $paiement->statut,
+        ];
+    }
 
     /**
      * Convertit le statut Jeko en statut interne

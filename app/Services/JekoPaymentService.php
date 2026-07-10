@@ -13,6 +13,7 @@ class JekoPaymentService
     protected string $storeId;
     protected string $apiKey;
     protected string $apiKeyId;
+    protected string $webhookSecret;
 
     public function __construct()
     {
@@ -20,6 +21,7 @@ class JekoPaymentService
         $this->storeId = config('services.jeko.store_id');
         $this->apiKey = config('services.jeko.api_key');
         $this->apiKeyId = config('services.jeko.api_key_id');
+        $this->webhookSecret = config('services.jeko.webhook_secret'); // Ajouté
     }
 
     /**
@@ -137,18 +139,13 @@ class JekoPaymentService
         }
 
         // Vérifier la signature (à adapter selon la doc Jeko)
-        $expectedSignature = hash_hmac('sha256', $payload, $this->apiKey);
+        $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
 
         Log::info('Webhook signature', ['signature' => $signature, 'expectedSignature' => $expectedSignature]);
 
-        // // Vérifier si la signature n'est pas  correcte ou non avec message de confirmation
-        // if (empty($expectedSignature)) {
-        //     Log::warning('Invalid webhook signature', ['payload' => $payload]);
-        //     return false;
-        // }
-
         return hash_equals($expectedSignature, $signature);
     }
+
 
     /**
      * Traite le webhook Jeko

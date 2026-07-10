@@ -210,7 +210,6 @@ class  JekoPaymentController extends Controller
         }
  
         $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
-        // $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
  
         try {
             // 2) Appel Jeko avec le montant recalculé (convention "amountCents" = XOF * 100)

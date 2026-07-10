@@ -138,8 +138,7 @@ class  JekoPaymentController extends Controller
 
         // Log::info('initierPaiement', $request->all());
         $validator = Validator::make($request->all(), [
-            'reference' => ['required', 'string', 'max:100'],
-            // 'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
+            'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
             'currency' => ['nullable', 'string', 'size:3', 'in:' . implode(',', self::DEVISES_SUPPORTEES)],
             'paymentMethod' => ['required', 'string', 'in:' . implode(',', self::METHODES_AUTORISEES)],
             'paymentType' => ['required', 'string', 'in:' . implode(',', self::TYPES_PAIEMENT_AUTORISES)],
@@ -341,17 +340,18 @@ class  JekoPaymentController extends Controller
                 return response()->json(['error' => 'Invalid webhook'], 401);
             }
  
-            $referenceInterne = $payload['reference'] ?? null;
+            $reference = $payload['transactionDetails']['reference'] ?? null;
+            // $referenceInterne = $payload['reference'] ?? null;
             $statutJeko = $payload['status'] ?? null;
  
-            if (!$referenceInterne || !$statutJeko) {
+            if (!$reference || !$statutJeko) {
                 return response()->json(['status' => 'ignored'], 200);
             }
  
-            $paiement = TblPaiement::where('codePaiement', $referenceInterne)->first();
+            $paiement = TblPaiement::where('referenceSource', $reference)->first();
  
             if (!$paiement) {
-                Log::warning('Transaction non trouvée pour le webhook', ['reference' => $referenceInterne]);
+                Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
                 return response()->json(['status' => 'ignored'], 200);
             }
  
@@ -363,18 +363,19 @@ class  JekoPaymentController extends Controller
             $paiement->telpaiement = $payload['counterpartIdentifier'] ?? null;
             $paiement->paid_sum = $payload['amount'] ?? null;
             $paiement->paid_amount = $payload['amount']['amount'] ?? null;
-            // $paiement->payment_token = $payload['amount']['amount'] ?? null;
+            $paiement->payment_token = $payload['transactionDetails']['paymentLinkId'] ?? null;
             $paiement->command_number = $payload['transactionDetails']['reference'] ?? null;
             $paiement->payment_validation_date = Carbon::now()->format('Y-m-d H:i:s');
+            $paiement->reponse_webhook = array_merge($paiement->reponse_webhook ?? [], ['webhook' => $payload, 'date_maj' => now()]);
             $paiement->save();
  
             // Propage le statut aux factures liées (même codePaiement)
-            TblFacture::where('codePaiement', $referenceInterne)->update([
+            TblFacture::where('codePaiement', $paiement->codePaiement)->update([
                 'etat' => 2,
             ]);
  
             Log::info('Transaction mise à jour via webhook', [
-                'reference' => $referenceInterne,
+                'referenceSource' => $reference,
                 // 'ancien_etat' => $ancienEtat,
                 // 'nouvel_etat' => $nouvelEtat,
             ]);

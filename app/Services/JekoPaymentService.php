@@ -149,43 +149,43 @@ class JekoPaymentService
     /**
      * Traite le webhook Jeko
      */
-    public function traiterWebhook(array $payload): ?array
-    {
-        $reference = $payload['reference'] ?? null;
-        $status = $payload['status'] ?? null;
+    // public function traiterWebhook(array $payload): ?array
+    // {
+    //     $reference = $payload['reference'] ?? null;
+    //     $status = $payload['status'] ?? null;
 
-        if (!$reference || !$status) {
-            return null;
-        }
+    //     if (!$reference || !$status) {
+    //         return null;
+    //     }
 
-        // Mettre à jour la transaction
-        $paiement = TblPaiement::where('referenceSource', $reference)->first();
+    //     // Mettre à jour la transaction
+    //     $paiement = TblPaiement::where('referenceSource', $reference)->first();
 
-        if (!$paiement) {
-            Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
-            return null;
-        }
+    //     if (!$paiement) {
+    //         Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
+    //         return null;
+    //     }
 
-        $ancienStatut = $paiement->statut;
-        $paiement->statut = $this->convertirStatut($status);
-        // $paiement->reponse_jeko = array_merge(
-        //     $paiement->reponse_jeko ?? [],
-        //     ['webhook' => $payload, 'date_maj' => now()]
-        // );
-        $paiement->save();
+    //     $ancienStatut = $paiement->statut;
+    //     $paiement->statut = $this->convertirStatut($status);
+    //     $paiement->reponse_webhook = array_merge(
+    //         $paiement->reponse_webhook ?? [],
+    //         ['webhook' => $payload, 'date_maj' => now()]
+    //     );
+    //     $paiement->save();
 
-        Log::info('Transaction mise à jour via webhook', [
-            'reference' => $reference,
-            'ancien_statut' => $ancienStatut,
-            'nouveau_statut' => $paiement->statut,
-        ]);
+    //     Log::info('Transaction mise à jour via webhook', [
+    //         'reference' => $reference,
+    //         'ancien_statut' => $ancienStatut,
+    //         'nouveau_statut' => $paiement->statut,
+    //     ]);
 
-        return [
-            'reference' => $reference,
-            'ancien_statut' => $ancienStatut,
-            'nouveau_statut' => $paiement->statut,
-        ];
-    }
+    //     return [
+    //         'reference' => $reference,
+    //         'ancien_statut' => $ancienStatut,
+    //         'nouveau_statut' => $paiement->statut,
+    //     ];
+    // }
 
     /**
      * Convertit le statut Jeko en statut interne

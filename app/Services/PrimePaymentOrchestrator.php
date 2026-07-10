@@ -65,7 +65,7 @@ class PrimePaymentOrchestrator
             'montantTotal' => $montantTotal,
             'nombreDePrimes' => $nombreDePrimes,
             'contractId' => $donnees['contractId'],
-            'referenceSource' => $donnees['contractIdWeb'] ?? $donnees['reference'],
+            'referenceSource' => $donnees['reference'],
             'primeUnitaire' => $primeUnitaire,
             'fraisAdhesion' => $fraisAdhesion,
             'facturesAGenerer' => $this->genererLignesFacturesAvenir($nombreDePrimes, $primeUnitaire, $fraisAdhesion),
@@ -96,7 +96,7 @@ class PrimePaymentOrchestrator
             'montantTotal' => $montantTotal,
             'nombreDePrimes' => $nombreDePrimes,
             'idProposition' => $contrat['idProposition'],
-            'referenceSource' => $donnees['contractId'] ?? $donnees['reference'],
+            'referenceSource' => $donnees['reference'],
             'primeUnitaire' => $contrat['primePrincipale'],
             'fraisAdhesion' => 0,
             'facturesAGenerer' => $this->genererLignesFacturesAvenir($nombreDePrimes, $contrat['primePrincipale'], 0),
@@ -123,13 +123,15 @@ class PrimePaymentOrchestrator
             'montantTotal' => $resultat['totalCents'],
             'nombreDePrimes' => count($facturesSelectionnees),
             'idProposition' => $resultat['contrat']['idProposition'],
-            'referenceSource' => $donnees['contractId'] ?? $donnees['reference'],
+            'referenceSource' => $donnees['reference'],
             'primeUnitaire' => null,
             'fraisAdhesion' => 0,
             // Pour la régularisation, on rattache chaque facture au montant réel de l'impayé sélectionné
             'facturesAGenerer' => array_map(static fn (array $f) => [
                 'prime' => $f['MontantNet'],
                 'referenceOrigine' => $f['idPresentation'],
+                'dateFacturation' => (!empty($f['MaDate'])) ? Carbon::createFromFormat('d/m/Y', $f['MaDate'])->format('Y-m-d H:i:s') : null,
+                'type' => 'PRIME',
             ], $facturesSelectionnees),
         ];
     }
@@ -173,7 +175,7 @@ class PrimePaymentOrchestrator
                 // 'payment_token' => $resultatJeko['paymentId'] ?? null,
                 // 'typePaiement' => $donnees['paymentType'],
                 'idproposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
-                // 'typeReference' => 'CONTRAT',
+                'typeReference' => $donnees['paymentType'],
                 'referenceSource' => $preparation['referenceSource'],
                 'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 1 : 0),
                 'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
@@ -187,6 +189,7 @@ class PrimePaymentOrchestrator
                     'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
                     'codePaiement' => $referenceInterne,
                     'prime' => $ligne['prime'],
+                    'tblfacture' => $ligne['type'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
                     'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
                     // 'typePaiement' => $donnees['paymentType'],

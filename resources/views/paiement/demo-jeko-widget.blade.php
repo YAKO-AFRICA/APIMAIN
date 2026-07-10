@@ -85,7 +85,7 @@
       <span class="badge">1️⃣ Souscription</span>
       <h3>Premier paiement</h3>
       <p>Après validation d'un nouveau contrat. Pas de contrat existant chez Yako Africassur pour cette démo : on fournit prime/frais manuellement.</p>
-      <input type="hidden" id="contractIdFirstPayment" value="1214"/>
+      <input type="hidden" id="contractIdFirstPayment" value="1093"/>
       <button class="btn-pay" id="btnFirstPayment">Payer la première prime</button>
     </div>
 

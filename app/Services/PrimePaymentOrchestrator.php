@@ -131,7 +131,7 @@ class PrimePaymentOrchestrator
                 'prime' => $f['MontantNet'],
                 'referenceOrigine' => $f['IdPresentation'],
                 'dateFacturation' => (!empty($f['MaDate'])) ? Carbon::createFromFormat('d/m/Y', $f['MaDate'])->format('Y-m-d H:i:s') : null,
-                'type' => 'PRIME',
+                'type' => 'N',
             ], $facturesSelectionnees),
         ];
     }
@@ -145,7 +145,7 @@ class PrimePaymentOrchestrator
                 // 'prime' => $primeUnitaire + ($i === 0 ? $fraisAdhesion : 0),
                 'referenceOrigine' => 'REFWEB-' . date('Ymd') . date('His'). '-'. rand(1, 9999),
                 'dateFacturation' => Carbon::now()->format('Y-m-d H:i:s'),
-                'type' => 'PRIME',
+                'type' => 'N',
             ];
         }
         if($fraisAdhesion > 0) {
@@ -153,7 +153,7 @@ class PrimePaymentOrchestrator
                 'prime' => $fraisAdhesion,
                 'referenceOrigine' => 'REFWEB-' . date('Ymd') . date('His'). '-'. rand(1, 9999),
                 'dateFacturation' => Carbon::now()->format('Y-m-d H:i:s'),
-                'type' => 'FRAIS_ADHESION',
+                'type' => 'F',
             ];
         }
         return $lignes;

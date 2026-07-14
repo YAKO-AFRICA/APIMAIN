@@ -19,8 +19,8 @@ class ReceiptController extends Controller
     public function show(string $referenceInterne): View
     {
         $libellesTypeFacture = [
-            'PRIME' => 'Prime principale',
-            'FRAIS_ADHESION' => 'Frais d\'adhésion',
+            'N' => 'Prime principale',
+            'F' => 'Frais d\'adhésion',
         ];
 
         $libellesType = [

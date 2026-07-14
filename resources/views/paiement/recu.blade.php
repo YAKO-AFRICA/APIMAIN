@@ -294,7 +294,7 @@
                 <th style="width:35%; text-align:right;">Type</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="payment-summary">
             @forelse($factures as $i => $facture)
             <tr>
                 <td>

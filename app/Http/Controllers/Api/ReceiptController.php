@@ -46,7 +46,7 @@ class ReceiptController extends Controller
         return view('paiement.recu', [
             'paiement' => $paiement,
             'factures' => $factures,
-            'libelleType' => $libellesType[$paiement->typePaiement] ?? $paiement->typePaiement,
+            'libelleType' => $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement,
         ]);
     }
 }

@@ -348,7 +348,7 @@ class  JekoPaymentController extends Controller
                 return response()->json(['status' => 'ignored'], 200);
             }
  
-            $paiement = TblPaiement::where('referenceSource', $reference)->first();
+            $paiement = TblPaiement::where('codePaiement', $reference)->first();
  
             if (!$paiement) {
                 Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
@@ -375,7 +375,7 @@ class  JekoPaymentController extends Controller
             ]);
  
             Log::info('Transaction mise à jour via webhook', [
-                'referenceSource' => $reference,
+                'reference' => $reference,
                 // 'ancien_etat' => $ancienEtat,
                 // 'nouvel_etat' => $nouvelEtat,
             ]);

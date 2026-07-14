@@ -178,7 +178,7 @@ class JekoPaymentService
         }
 
         // Mettre à jour la transaction
-        $paiement = TblPaiement::where('referenceSource', $reference)->first();
+        $paiement = TblPaiement::where('codePaiement', $reference)->first();
 
         if (!$paiement) {
             Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);

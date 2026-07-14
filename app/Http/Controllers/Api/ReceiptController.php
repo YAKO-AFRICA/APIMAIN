@@ -24,9 +24,9 @@ class ReceiptController extends Controller
         ];
 
         $libellesType = [
-            1 => 'Premier paiement',
-            2 => 'Paiement anticipé',
-            3 => 'Régularisation de primes',
+            'firstPayment' => 'Premier paiement',
+            'earlyPayment' => 'Paiement anticipé',
+            'recoveryPrime' => 'Régularisation de primes',
         ];
         $paiement = TblPaiement::where('codePaiement', $referenceInterne)->firstOrFail();
 

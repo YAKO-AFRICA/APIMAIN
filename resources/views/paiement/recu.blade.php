@@ -260,10 +260,10 @@
             <span class="label">Moyen de paiement</span>
             <span class="value">{{ ucfirst($paiement->payment_mode ?? '') }}</span>
         </div>
-        @if($paiement->idproposition)
+        @if($paiement->idproposition || $paiement->idContrat)
         <div class="item">
             <span class="label">Contrat</span>
-            <span class="value">#{{ $paiement->idproposition }}</span>
+            <span class="value">#{{ $paiement->idproposition ?? $paiement->idContrat ?? '' }}</span>
         </div>
         @endif
         @if($paiement->emailpayeur)
@@ -298,7 +298,7 @@
             @forelse($factures as $i => $facture)
             <tr>
                 <td>
-                    @if(($paiement->typePaiement ?? '') === 'recoveryPrime')
+                    @if(($paiement->typeReglement ?? '') === 'recoveryPrime')
                         <span style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size:16px;">🔄</span>
                             Régularisation prime
@@ -340,13 +340,13 @@
     </div>
 
     <!-- Informations supplémentaires -->
-    @if(($paiement->typePaiement ?? '') === 'firstPayment' && isset($fraisAdhesion))
+    @if(($paiement->typeReglement ?? '') === 'firstPayment' && isset($fraisAdhesion))
     <div style="font-size:12px; color:#6b7280; text-align:center; padding:8px 0 4px; border-top:1px solid #eef2f0;">
         <span>⚠️ Ce paiement comprend la première prime et les frais d'adhésion.</span>
     </div>
     @endif
 
-    @if(($paiement->typePaiement ?? '') === 'recoveryPrime' && $factures->count() > 0)
+    @if(($paiement->typeReglement ?? '') === 'recoveryPrime' && $factures->count() > 0)
     <div style="font-size:12px; color:#6b7280; text-align:center; padding:8px 0 4px; border-top:1px solid #eef2f0;">
         <span>📋 Ce paiement régularise {{ $factures->count() }} prime{{ $factures->count() > 1 ? 's' : '' }} impayée{{ $factures->count() > 1 ? 's' : '' }}.</span>
     </div>

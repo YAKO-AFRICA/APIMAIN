@@ -170,10 +170,10 @@ class  JekoPaymentController extends Controller
         });
  
         if ($validator->fails()) {
-            Log::warning('Validation du paiement échouée', [
-                'errors' => $validator->errors(),
-                'input' => $request->except(['metadata']),
-            ]);
+            // Log::warning('Validation du paiement échouée', [
+            //     'errors' => $validator->errors(),
+            //     'input' => $request->except(['metadata']),
+            // ]);
  
             return response()->json([
                 'success' => false,
@@ -185,12 +185,12 @@ class  JekoPaymentController extends Controller
  
         $donnees = $validator->validated();
 
-        Log::info('Données de paiement validées', $donnees);
+        // Log::info('Données de paiement validées', $donnees);
  
         // 1) Calcul du montant et des lignes de factures — TOUJOURS côté serveur
         try {
             $preparation = $this->orchestrator->preparer($donnees);
-            Log::info('Données de la preparation', $preparation);
+            // Log::info('Données de la preparation', $preparation);
         } catch (\RuntimeException $e) {
             return response()->json([
                 'success' => false,
@@ -209,7 +209,8 @@ class  JekoPaymentController extends Controller
             ], 422);
         }
  
-        $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
+        $referenceInterne = $donnees['reference'];
+        // $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
  
         try {
             // 2) Appel Jeko avec le montant recalculé (convention "amountCents" = XOF * 100)
@@ -227,19 +228,19 @@ class  JekoPaymentController extends Controller
                 'metadata' => $donnees['metadata'] ?? null,
             ], $referenceInterne);
  
-            Log::info('Initialisation paiement Jeko', [
-                'reference_interne' => $referenceInterne,
-                'paymentType' => $donnees['paymentType'],
-                'montant' => $preparation['montantTotal'],
-                'resultat' => $resultat,
-            ]);
+            // Log::info('Initialisation paiement Jeko', [
+            //     'reference_interne' => $referenceInterne,
+            //     'paymentType' => $donnees['paymentType'],
+            //     'montant' => $preparation['montantTotal'],
+            //     'resultat' => $resultat,
+            // ]);
  
             if (!$resultat['success']) {
-                Log::warning('Échec initialisation paiement Jeko', [
-                    'reference' => $donnees['reference'],
-                    'reference_interne' => $referenceInterne,
-                    'erreur' => $resultat['message'] ?? 'Erreur inconnue',
-                ]);
+                // Log::warning('Échec initialisation paiement Jeko', [
+                //     'reference' => $donnees['reference'],
+                //     'reference_interne' => $referenceInterne,
+                //     'erreur' => $resultat['message'] ?? 'Erreur inconnue',
+                // ]);
  
                 return response()->json([
                     'success' => false,
@@ -306,7 +307,7 @@ class  JekoPaymentController extends Controller
                     'statut' => $statut['status'],
                     'montant' => $paiement->montant,
                     'reference' => $paiement->codePaiement,
-                    'typePaiement' => $paiement->typePaiement,
+                    'typePaiement' => $paiement->typeReglement,
                     'details' => $statut['details'] ?? null,
                 ],
             ]);
@@ -363,7 +364,7 @@ class  JekoPaymentController extends Controller
             $paiement->paid_sum = (int) $payload['amount']['amount'] / 100 ?? null;
             $paiement->paid_amount = (int) $payload['amount']['amount'] / 100 ?? null;
             $paiement->payment_token = $payload['transactionDetails']['paymentLinkId'] ?? null;
-            $paiement->command_number = $payload['transactionDetails']['reference'] ?? null;
+            $paiement->command_number = $payload['id'] ?? null;
             $paiement->payment_validation_date = Carbon::now()->format('Y-m-d H:i:s');
             $paiement->reponse_webhook = array_merge($paiement->reponse_webhook ?? [], ['webhook' => $payload, 'date_maj' => now()]);
             $paiement->save();

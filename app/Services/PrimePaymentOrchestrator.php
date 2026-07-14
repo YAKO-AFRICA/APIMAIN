@@ -65,7 +65,7 @@ class PrimePaymentOrchestrator
             'montantTotal' => $montantTotal,
             'nombreDePrimes' => $nombreDePrimes,
             'contractId' => $donnees['contractId'],
-            'referenceSource' => $donnees['reference'],
+            'reference' => $donnees['reference'],
             'primeUnitaire' => $primeUnitaire,
             'fraisAdhesion' => $fraisAdhesion,
             'facturesAGenerer' => $this->genererLignesFacturesAvenir($nombreDePrimes, $primeUnitaire, $fraisAdhesion),
@@ -96,7 +96,7 @@ class PrimePaymentOrchestrator
             'montantTotal' => $montantTotal,
             'nombreDePrimes' => $nombreDePrimes,
             'idProposition' => $contrat['idProposition'],
-            'referenceSource' => $donnees['reference'],
+            'reference' => $donnees['reference'],
             'primeUnitaire' => $contrat['primePrincipale'],
             'fraisAdhesion' => 0,
             'facturesAGenerer' => $this->genererLignesFacturesAvenir($nombreDePrimes, $contrat['primePrincipale'], 0),
@@ -123,7 +123,7 @@ class PrimePaymentOrchestrator
             'montantTotal' => $resultat['totalCents'],
             'nombreDePrimes' => count($facturesSelectionnees),
             'idProposition' => $resultat['contrat']['idProposition'],
-            'referenceSource' => $donnees['reference'],
+            'reference' => $donnees['reference'],
             'primeUnitaire' => null,
             'fraisAdhesion' => 0,
             // Pour la régularisation, on rattache chaque facture au montant réel de l'impayé sélectionné
@@ -165,7 +165,7 @@ class PrimePaymentOrchestrator
     public function enregistrer(array $donnees, array $preparation, string $referenceInterne, array $resultatJeko): TblPaiement
     {
         return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko) {
-            $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
+            // $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
             $paiement = TblPaiement::create([
                 'codePaiement' => $referenceInterne,
                 'montant' => $preparation['montantTotal'],
@@ -173,11 +173,14 @@ class PrimePaymentOrchestrator
                 'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),
                 'payment_mode' => $donnees['paymentMethod'],
                 'payment_status' => $resultatJeko['status'] ?? 'pending',
-                'typePaiement' => $typePaiement,
-                'idproposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
-                'typeReference' => $donnees['paymentType'],
-                'referenceSource' => $preparation['referenceSource'],
-                'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 1 : 0),
+                'typePaiement' => 1,
+                'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? $donnees['idProposition'] : null,
+                'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : null,
+                // 'typeReference' => $donnees['paymentType'],
+                'typeReglement' => $donnees['paymentType'],
+                'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? $donnees['idProposition'] : null,
+                // 'referenceSource' => $preparation['referenceSource'],
+                'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),
                 'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
                 'emailpayeur' => $donnees['customerEmail'] ?? null,
                 'saisiele' => Carbon::now()->format('Y-m-d H:i:s')
@@ -191,7 +194,8 @@ class PrimePaymentOrchestrator
                     'typeFacture' => $ligne['type'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
                     'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
-                    'typePaiement' => $typePaiement, 
+                    'typePaiement' => 1, 
+                    // 'typeReglement' => $donnees['paymentType'], 
                     'referenceSource' => $ligne['referenceOrigine'],
                     'idcontrat' => $donnees['contractId'] ?? $donnees['idProposition'] ?? null,
                     'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),

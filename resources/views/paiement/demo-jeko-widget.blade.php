@@ -139,8 +139,21 @@
         },
       });
 
-      function newReference(prefix) {
-        return prefix + '-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      // function newReference(prefix) {
+      //   return prefix + '-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      // }
+
+      function newReference() {
+        const code = Math.floor(Math.random() * 9999) + 1;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        return `PAI-${year}${month}${day}${hours}${minutes}${seconds}-${code}`;
       }
 
       // 1) Premier paiement — le contrat vient d'être validé, on connaît déjà
@@ -148,7 +161,7 @@
       //    de souscription juste avant), donc pas besoin de contractId ici.
       document.getElementById('btnFirstPayment').addEventListener('click', () => {
         widget.open({
-          reference: newReference('SOUSCRIPTION'),
+          reference: newReference(),
           paymentType: 'firstPayment',
           contractId: document.getElementById('contractIdFirstPayment').value || undefined,
           description: 'Souscription CADENCE Education — première prime',
@@ -164,7 +177,7 @@
       //    lui-même si on ne le fournit pas ici.
       document.getElementById('btnEarlyPayment').addEventListener('click', () => {
         widget.open({
-          reference: newReference('AVANCE'),
+          reference: newReference(),
           paymentType: 'earlyPayment',
           contractId: document.getElementById('contractIdEarly').value || undefined,
           description: 'Paiement anticipé de primes',
@@ -180,7 +193,7 @@
       //    une fois le contrat vérifié, et laisse le client les sélectionner.
       document.getElementById('btnRecoveryPrime').addEventListener('click', () => {
         widget.open({
-          reference: newReference('REGUL'),
+          reference: newReference(),
           paymentType: 'recoveryPrime',
           contractId: document.getElementById('contractIdRecovery').value || undefined,
           description: 'Régularisation de primes impayées',

@@ -65,9 +65,9 @@ class EncaissementBisService
             return $this->failure('Aucune information trouvée pour ce contrat.');
         }
 
-        // if ($details['OnStdbyOff'] == "3") {
-        //     return $this->failure('Ce contrat est arreté donc Impossible d’éffectuer un paiement !');
-        // }
+        if ($details['OnStdbyOff'] == "3") {
+            return $this->failure('Ce contrat est arreté donc Impossible d’éffectuer un paiement !');
+        }
 
         $assures = $data['assures'] ?? [];
         $fraisAdhesion = 0;

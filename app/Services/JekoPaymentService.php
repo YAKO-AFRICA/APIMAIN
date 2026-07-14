@@ -106,7 +106,7 @@ class JekoPaymentService
             'X-API-KEY-ID' => $this->apiKeyId,
         ])
             ->timeout(10)
-            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->referenceSource);
+            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->command_number);
 
         if (!$response->successful()) {
             return [

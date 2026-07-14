@@ -2302,8 +2302,8 @@
             }
         </div>
 
-        <span class="jeko-section-label" style="margin-top:16px;">${t.additionalPrimesLabel}</span>
-        <div class="jeko-toggle-group">
+        <span class="jeko-section-label" style="margin-top:16px; display:none;">${t.additionalPrimesLabel}</span>
+        <div class="jeko-toggle-group" style="margin-top:16px; display:none;">
             <button type="button" class="jeko-toggle-btn" data-additional="yes" aria-pressed="${this._additionalPrimes ? "true" : "false"}">${t.additionalPrimesYes}</button>
             <button type="button" class="jeko-toggle-btn" data-additional="no" aria-pressed="${!this._additionalPrimes ? "true" : "false"}">${t.additionalPrimesNo}</button>
         </div>

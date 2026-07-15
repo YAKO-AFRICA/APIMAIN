@@ -85,7 +85,7 @@ class PrimePaymentOrchestrator
 
         if ($contrat['aDesImpayes']) {
             throw new \RuntimeException(
-                "Ce contrat a des primes impayées. Utilisez la régularisation (recoveryPrime) avant de payer en avance."
+                "Ce contrat a des primes impayées. Veuillez effectuer une régularisation avant de pouvoir payer en avance."
             );
         }
 
@@ -188,14 +188,13 @@ class PrimePaymentOrchestrator
 
             foreach ($preparation['facturesAGenerer'] as $ligne) {
                 TblFacture::create([
-                    'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
+                    // 'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
                     'codePaiement' => $referenceInterne,
                     'prime' => $ligne['prime'],
                     'typeFacture' => $ligne['type'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
                     'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
                     'typePaiement' => 1, 
-                    // 'typeReglement' => $donnees['paymentType'], 
                     'referenceSource' => $ligne['referenceOrigine'],
                     'idcontrat' => $donnees['contractId'] ?? $donnees['idProposition'] ?? null,
                     'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),

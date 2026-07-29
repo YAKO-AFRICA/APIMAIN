@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contrat;
+use App\Models\TblDocument;
 use App\Models\TblFacture;
 use App\Models\TblPaiement;
 use App\Services\EncaissementBisService;
 use App\Services\JekoPaymentService;
 use App\Services\PrimePaymentOrchestrator;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -373,6 +377,7 @@ class  JekoPaymentController extends Controller
             TblFacture::where('codePaiement', $paiement->codePaiement)->update([
                 'etat' => 2,
             ]);
+            $this->generateReceipt($paiement->codePaiement);
  
             Log::info('Transaction mise à jour via webhook', [
                 'reference' => $reference,
@@ -389,6 +394,80 @@ class  JekoPaymentController extends Controller
  
             return response()->json(['error' => 'Webhook processing failed'], 500);
         }
+    }
+
+    private function generateReceipt(string $codePaiement)
+    {
+        try {
+
+            $externalUploadDir = base_path(env('UPLOADS_PATH'));
+            if (!is_dir($externalUploadDir)) {
+                mkdir($externalUploadDir, 0777, true);
+            }
+            $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
+            $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
+            $libellesTypeFacture = [
+                'N' => 'Prime principale',
+                'F' => 'Frais d\'adhésion',
+            ];
+
+            $libellesType = [
+                'firstPayment' => 'Premier paiement',
+                'earlyPayment' => 'Paiement anticipé',
+                'recoveryPrime' => 'Régularisation de primes',
+            ];
+            $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
+            $libelleType = $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement;
+
+            $factures = TblFacture::where('codePaiement', $codePaiement)
+                ->orderBy('dateAjout')
+                ->get()
+                ->map(function ($facture) use ($libellesTypeFacture) {
+                    $facture->libelleTypeFacture =
+                        $libellesTypeFacture[$facture->typeFacture]
+                        ?? $facture->typeFacture;
+
+                    return $facture;
+                });
+
+            $pdf = Pdf::loadView('paiement.recu_pdf', compact('paiement', 'factures', 'libelleType'));
+            $pdf->setPaper('A4', 'portrait');
+
+            $fileName = 'recu-paiement-' . $paiement->codePaiement . '.pdf';
+            $filePath = $externalUploadDir . $fileName;
+            $pdf->save($filePath);
+
+             // Log pour vérifier que tout fonctionne
+            Log::info('PDF généré avec succès pour : ' . $codePaiement);
+            Log::info('Chemin du fichier PDF : ' . $filePath);
+
+            // Ajoute le recu au contrat
+            TblDocument::create([
+                'codecontrat' => $paiement->idContrat,
+                'filename' => $fileName,
+                'libelle' => 'Recu de paiement',
+                'saisiele' => now(),
+                'saisiepar' => $contrat->saisiepar ?? null,
+                'source' => "ES",
+            ]);
+
+            // Mettre le contrat en statut "payé"
+            $contrat->update(['estpaye' => 1]);
+
+            // Retourne le fichier PDF
+            return [
+                'status' => 'success',
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+            ];
+        } catch (\Exception $e) {
+            // Log l'erreur
+            Log::error('Erreur génération PDF : ' . $e->getMessage());
+
+            // Retourne une réponse d'erreur
+            return back()->with('error', 'Erreur lors de la génération du PDF : ' . $e->getMessage());
+        }
+        
     }
  
     /**

@@ -10,16 +10,16 @@ use App\Models\TblPaiement;
 use App\Services\EncaissementBisService;
 use App\Services\JekoPaymentService;
 use App\Services\PrimePaymentOrchestrator;
-use Barryvdh\DomPDF\Facade\Pdf;
+// use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 
 //      * Contrôleur proxy pour l'API de paiement Jeko.
@@ -396,16 +396,97 @@ class  JekoPaymentController extends Controller
         }
     }
 
+    // private function generateReceipt(string $codePaiement)
+    // {
+    //     try {
+
+    //         $externalUploadDir = base_path(env('UPLOADS_PATH'));
+    //         if (!is_dir($externalUploadDir)) {
+    //             mkdir($externalUploadDir, 0777, true);
+    //         }
+
+    //         $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
+    //         $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
+    //         $libellesTypeFacture = [
+    //             'N' => 'Prime principale',
+    //             'F' => 'Frais d\'adhésion',
+    //         ];
+
+    //         $libellesType = [
+    //             'firstPayment' => 'Premier paiement',
+    //             'earlyPayment' => 'Paiement anticipé',
+    //             'recoveryPrime' => 'Régularisation de primes',
+    //         ];
+    //         $libelleType = $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement;
+
+    //         $factures = TblFacture::where('codePaiement', $codePaiement)
+    //             ->orderBy('dateAjout')
+    //             ->get()
+    //             ->map(function ($facture) use ($libellesTypeFacture) {
+    //                 $facture->libelleTypeFacture =
+    //                     $libellesTypeFacture[$facture->typeFacture]
+    //                     ?? $facture->typeFacture;
+
+    //                 return $facture;
+    //             });
+
+    //         $pdf = Pdf::loadView('paiement.recu_pdf', compact('paiement', 'factures', 'libelleType'));
+    //         $pdf->setPaper('A4', 'portrait');
+    //         $pdf->setOptions([
+    //             'defaultFont' => 'DejaVu Sans',
+    //             'isRemoteEnabled' => false,
+    //             'isHtml5ParserEnabled' => true,
+    //             'isPhpEnabled' => false,
+    //         ]);
+    //          // Log pour vérifier que tout fonctionne
+    //         $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . time() . '.pdf';
+    //         $filePath = $externalUploadDir . $fileName;
+    //         Log::info('Chemin du fichier PDF : ' . $filePath);
+    //         $pdf->save($filePath);
+
+    //          // Log pour vérifier que tout fonctionne
+    //         Log::info('PDF généré avec succès pour : ' . $codePaiement);
+
+    //         // Ajoute le recu au contrat
+    //         TblDocument::create([
+    //             'codecontrat' => $paiement->idContrat,
+    //             'filename' => $fileName,
+    //             'libelle' => 'Recu de paiement',
+    //             'saisiele' => now(),
+    //             'saisiepar' => $contrat->saisiepar ?? null,
+    //             'source' => "ES",
+    //         ]);
+
+    //         // Mettre le contrat en statut "payé"
+    //         $contrat->update(['estpaye' => 1]);
+
+    //         // Retourne le fichier PDF
+    //         return [
+    //             'status' => 'success',
+    //             'file_name' => $fileName,
+    //             'file_path' => $filePath,
+    //         ];
+    //     } catch (\Exception $e) {
+    //         // Log l'erreur
+    //         Log::error('Erreur génération PDF : ' . $e->getMessage());
+
+    //         // Retourne une réponse d'erreur
+    //         return back()->with('error', 'Erreur lors de la génération du PDF : ' . $e->getMessage());
+    //     }
+        
+    // }
+
     private function generateReceipt(string $codePaiement)
     {
         try {
-
             $externalUploadDir = base_path(env('UPLOADS_PATH'));
             if (!is_dir($externalUploadDir)) {
                 mkdir($externalUploadDir, 0777, true);
             }
+
             $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
             $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
+            
             $libellesTypeFacture = [
                 'N' => 'Prime principale',
                 'F' => 'Frais d\'adhésion',
@@ -416,7 +497,7 @@ class  JekoPaymentController extends Controller
                 'earlyPayment' => 'Paiement anticipé',
                 'recoveryPrime' => 'Régularisation de primes',
             ];
-            $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
+            
             $libelleType = $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement;
 
             $factures = TblFacture::where('codePaiement', $codePaiement)
@@ -426,22 +507,33 @@ class  JekoPaymentController extends Controller
                     $facture->libelleTypeFacture =
                         $libellesTypeFacture[$facture->typeFacture]
                         ?? $facture->typeFacture;
-
                     return $facture;
                 });
 
-            $pdf = Pdf::loadView('paiement.recu_pdf', compact('paiement', 'factures', 'libelleType'));
-            $pdf->setPaper('A4', 'portrait');
+            // Charger la vue et générer le HTML
+            $html = view('paiement.recu_pdf', compact('paiement', 'factures', 'libelleType'))->render();
 
-            $fileName = 'recu-paiement-' . $paiement->codePaiement . '.pdf';
-            $filePath = $externalUploadDir . $fileName;
-            $pdf->save($filePath);
+            // Configurer DomPDF
+            $options = new Options();
+            $options->set('defaultFont', 'DejaVu Sans');
+            $options->set('isRemoteEnabled', false);
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isPhpEnabled', false);
 
-             // Log pour vérifier que tout fonctionne
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . time() . '.pdf';
+            $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
+            
+            // Sauvegarder le PDF
+            file_put_contents($filePath, $dompdf->output());
+            
             Log::info('PDF généré avec succès pour : ' . $codePaiement);
-            Log::info('Chemin du fichier PDF : ' . $filePath);
 
-            // Ajoute le recu au contrat
+            // Ajoute le reçu au contrat
             TblDocument::create([
                 'codecontrat' => $paiement->idContrat,
                 'filename' => $fileName,
@@ -450,24 +542,25 @@ class  JekoPaymentController extends Controller
                 'saisiepar' => $contrat->saisiepar ?? null,
                 'source' => "ES",
             ]);
-
+            
             // Mettre le contrat en statut "payé"
             $contrat->update(['estpaye' => 1]);
 
-            // Retourne le fichier PDF
             return [
                 'status' => 'success',
                 'file_name' => $fileName,
                 'file_path' => $filePath,
             ];
+            
         } catch (\Exception $e) {
-            // Log l'erreur
             Log::error('Erreur génération PDF : ' . $e->getMessage());
-
-            // Retourne une réponse d'erreur
-            return back()->with('error', 'Erreur lors de la génération du PDF : ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return [
+                'status' => 'error',
+                'message' => 'Erreur lors de la génération du PDF : ' . $e->getMessage()
+            ];
         }
-        
     }
  
     /**

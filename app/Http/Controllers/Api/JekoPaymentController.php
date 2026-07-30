@@ -525,7 +525,7 @@ class  JekoPaymentController extends Controller
             $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
 
-            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . time() . '.pdf';
+            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $paiement->idContrat . '.pdf';
             $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
             
             // Sauvegarder le PDF

@@ -473,7 +473,7 @@
 
         <!-- Bouton PDF -->
         <div class="actions">
-            <a href="{{ route('receipt.download.pdf', $paiement->codePaiement) }}" target="_blank"  class="btn">
+            <a href="{{ url('storage/documents/' . $fileName) }}" download class="btn">
                 📥 Télécharger en PDF
             </a>
             <button onclick="window.print()">

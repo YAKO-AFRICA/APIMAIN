@@ -43,12 +43,15 @@ class ReceiptController extends Controller
                 return $facture;
             });
 
+        $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $paiement->idContrat . '.pdf';
+
 
 
         return view('paiement.recu', [
             'paiement' => $paiement,
             'factures' => $factures,
             'libelleType' => $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement,
+            'fileName' => $fileName
         ]);
     }
 
@@ -147,7 +150,7 @@ class ReceiptController extends Controller
             
             Log::info('PDF généré avec succès pour : ' . $referenceInterne);
             
-            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . time() . '.pdf';
+            
             
             // Télécharger le PDF
             return $pdf->download($fileName);

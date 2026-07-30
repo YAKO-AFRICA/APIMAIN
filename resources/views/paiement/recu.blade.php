@@ -456,7 +456,7 @@
 
         <div class="payment-summary">
             <span class="label">Total réglé</span>
-            <span class="amount">{{ number_format($paiement->montant ?? 0, 0, ',', ' ') }} XOF</span>
+            <span class="amount">{{ number_format($paiement->montant ?? 0, 0, ',', ' ') }} F CFA</span>
         </div>
 
         @if(($paiement->typeReglement ?? '') === 'firstPayment' && isset($fraisAdhesion))

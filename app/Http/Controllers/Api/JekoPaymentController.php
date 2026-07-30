@@ -377,7 +377,7 @@ class  JekoPaymentController extends Controller
             TblFacture::where('codePaiement', $paiement->codePaiement)->update([
                 'etat' => 2,
             ]);
-            $this->generateReceipt($paiement->codePaiement);
+            $this->generateReceipt($paiement->codePaiement, $paiement->typeReglement);
  
             Log::info('Transaction mise à jour via webhook', [
                 'reference' => $reference,
@@ -396,87 +396,7 @@ class  JekoPaymentController extends Controller
         }
     }
 
-    // private function generateReceipt(string $codePaiement)
-    // {
-    //     try {
-
-    //         $externalUploadDir = base_path(env('UPLOADS_PATH'));
-    //         if (!is_dir($externalUploadDir)) {
-    //             mkdir($externalUploadDir, 0777, true);
-    //         }
-
-    //         $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
-    //         $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
-    //         $libellesTypeFacture = [
-    //             'N' => 'Prime principale',
-    //             'F' => 'Frais d\'adhésion',
-    //         ];
-
-    //         $libellesType = [
-    //             'firstPayment' => 'Premier paiement',
-    //             'earlyPayment' => 'Paiement anticipé',
-    //             'recoveryPrime' => 'Régularisation de primes',
-    //         ];
-    //         $libelleType = $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement;
-
-    //         $factures = TblFacture::where('codePaiement', $codePaiement)
-    //             ->orderBy('dateAjout')
-    //             ->get()
-    //             ->map(function ($facture) use ($libellesTypeFacture) {
-    //                 $facture->libelleTypeFacture =
-    //                     $libellesTypeFacture[$facture->typeFacture]
-    //                     ?? $facture->typeFacture;
-
-    //                 return $facture;
-    //             });
-
-    //         $pdf = Pdf::loadView('paiement.recu_pdf', compact('paiement', 'factures', 'libelleType'));
-    //         $pdf->setPaper('A4', 'portrait');
-    //         $pdf->setOptions([
-    //             'defaultFont' => 'DejaVu Sans',
-    //             'isRemoteEnabled' => false,
-    //             'isHtml5ParserEnabled' => true,
-    //             'isPhpEnabled' => false,
-    //         ]);
-    //          // Log pour vérifier que tout fonctionne
-    //         $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . time() . '.pdf';
-    //         $filePath = $externalUploadDir . $fileName;
-    //         Log::info('Chemin du fichier PDF : ' . $filePath);
-    //         $pdf->save($filePath);
-
-    //          // Log pour vérifier que tout fonctionne
-    //         Log::info('PDF généré avec succès pour : ' . $codePaiement);
-
-    //         // Ajoute le recu au contrat
-    //         TblDocument::create([
-    //             'codecontrat' => $paiement->idContrat,
-    //             'filename' => $fileName,
-    //             'libelle' => 'Recu de paiement',
-    //             'saisiele' => now(),
-    //             'saisiepar' => $contrat->saisiepar ?? null,
-    //             'source' => "ES",
-    //         ]);
-
-    //         // Mettre le contrat en statut "payé"
-    //         $contrat->update(['estpaye' => 1]);
-
-    //         // Retourne le fichier PDF
-    //         return [
-    //             'status' => 'success',
-    //             'file_name' => $fileName,
-    //             'file_path' => $filePath,
-    //         ];
-    //     } catch (\Exception $e) {
-    //         // Log l'erreur
-    //         Log::error('Erreur génération PDF : ' . $e->getMessage());
-
-    //         // Retourne une réponse d'erreur
-    //         return back()->with('error', 'Erreur lors de la génération du PDF : ' . $e->getMessage());
-    //     }
-        
-    // }
-
-    private function generateReceipt(string $codePaiement)
+    private function generateReceipt(string $codePaiement, string $typeReglement)
     {
         try {
             $externalUploadDir = base_path(env('UPLOADS_PATH'));
@@ -525,7 +445,7 @@ class  JekoPaymentController extends Controller
             $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
 
-            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $paiement->idContrat . '.pdf';
+            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . ($typeReglement === 'firstPayment') ? $paiement->idContrat : $paiement->idproposition . '.pdf';
             $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
             
             // Sauvegarder le PDF
@@ -533,18 +453,21 @@ class  JekoPaymentController extends Controller
             
             Log::info('PDF généré avec succès pour : ' . $codePaiement);
 
-            // Ajoute le reçu au contrat
-            TblDocument::create([
-                'codecontrat' => $paiement->idContrat,
-                'filename' => $fileName,
-                'libelle' => 'Recu de paiement',
-                'saisiele' => now(),
-                'saisiepar' => $contrat->saisiepar ?? null,
-                'source' => "ES",
-            ]);
-            
-            // Mettre le contrat en statut "payé"
-            $contrat->update(['estpaye' => 1]);
+            if ($typeReglement === 'firstPayment') {
+
+                // Ajoute le reçu au contrat
+                TblDocument::create([
+                    'codecontrat' => $paiement->idContrat,
+                    'filename' => $fileName,
+                    'libelle' => 'Recu de paiement',
+                    'saisiele' => now(),
+                    'saisiepar' => $contrat->saisiepar ?? null,
+                    'source' => "ES",
+                ]);
+                
+                // Mettre le contrat en statut "payé"
+                $contrat->update(['estpaye' => 1]);
+            }
 
             return [
                 'status' => 'success',

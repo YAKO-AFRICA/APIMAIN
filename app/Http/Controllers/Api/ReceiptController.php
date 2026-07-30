@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\TblFacture;
 use App\Models\TblPaiement;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ReceiptController extends Controller
@@ -33,8 +34,12 @@ class ReceiptController extends Controller
 
                 return $facture;
             });
+        
+        $identifiantContrat = ($paiement->typeReglement === 'firstPayment') ? $paiement->idContrat : $paiement->idproposition;
 
-        $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . ($paiement->typeReglement === 'firstPayment') ? $paiement->idContrat : $paiement->idproposition . '.pdf';
+        $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
+        
+        Log::info('fileName', ['fileName' => $fileName]);
 
 
 

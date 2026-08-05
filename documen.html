@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 Suggestion API · Documentation & Test</title>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background: #f6f9fc;
+      padding: 2rem 1.5rem;
+      color: #0b1a33;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-weight: 600;
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header h1 i {
+      color: #2563eb;
+    }
+
+    .badge {
+      background: #e6f0ff;
+      color: #1e4f8a;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .base-url {
+      background: white;
+      padding: 0.5rem 1.2rem;
+      border-radius: 40px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.9rem;
+      border: 1px solid #dce5ef;
+      color: #1e3b5c;
+    }
+
+    .base-url i {
+      margin-right: 0.5rem;
+      color: #2563eb;
+    }
+
+    /* grid */
+    .api-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.8rem;
+      margin-top: 0.5rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 1.25rem 1.5rem 1.8rem;
+      box-shadow: 0 8px 24px rgba(0, 20, 50, 0.04);
+      border: 1px solid #eef3f9;
+      transition: 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      border-color: #cbddee;
+      box-shadow: 0 12px 28px rgba(0, 20, 50, 0.07);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .card-header .method {
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.4px;
+      padding: 0.2rem 0.9rem;
+      border-radius: 30px;
+      background: #dbeafe;
+      color: #1e4f8a;
+      text-transform: uppercase;
+    }
+
+    .method.get { background: #d1fae5; color: #0b6e4f; }
+    .method.post { background: #dbeafe; color: #1e4f8a; }
+    .method.put { background: #fef3c7; color: #92400e; }
+    .method.delete { background: #fee2e2; color: #991b1b; }
+
+    .card-header .endpoint {
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: #1a344d;
+      word-break: break-word;
+    }
+
+    .card-body {
+      flex: 1;
+    }
+
+    .desc {
+      color: #2c4a6b;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .param-list {
+      background: #f8fafd;
+      border-radius: 16px;
+      padding: 0.75rem 1rem;
+      margin: 0.75rem 0 1rem;
+      font-size: 0.85rem;
+      border-left: 3px solid #b7cee8;
+    }
+
+    .param-list strong {
+      color: #0b2a4a;
+      font-weight: 600;
+    }
+
+    .param-list .param-item {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #e4ecf5;
+      padding: 0.4rem 0;
+    }
+
+    .param-list .param-item:last-child {
+      border-bottom: 0;
+    }
+
+    .param-tag {
+      background: #e9eff6;
+      padding: 0.1rem 0.6rem;
+      border-radius: 30px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #1f3c5c;
+    }
+
+    .example-box {
+      background: #f1f6fd;
+      border-radius: 16px;
+      padding: 0.8rem 1rem;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.75rem;
+      color: #143450;
+      border: 1px solid #dce6f2;
+      margin: 0.5rem 0 0.2rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .btn-try {
+      margin-top: 1.2rem;
+      align-self: flex-start;
+      background: transparent;
+      border: 1px solid #b7cee8;
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #1a3d62;
+      cursor: pointer;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-try:hover {
+      background: #e5eff9;
+      border-color: #6b92b9;
+    }
+
+    .btn-try i {
+      font-size: 0.7rem;
+    }
+
+    .response-area {
+      margin-top: 0.8rem;
+      background: #0b1a2e;
+      color: #d6e6ff;
+      border-radius: 16px;
+      padding: 0.8rem 1rem;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.7rem;
+      max-height: 160px;
+      overflow-y: auto;
+      display: none;
+      border: 1px solid #2b4b6e;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .response-area.show {
+      display: block;
+    }
+
+    .footer {
+      margin-top: 3.5rem;
+      font-size: 0.9rem;
+      color: #3d5f82;
+      border-top: 1px solid #dce5ef;
+      padding-top: 1.8rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .footer a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* small */
+    @media (max-width: 640px) {
+      .header h1 { font-size: 1.5rem; }
+      .base-url { font-size: 0.7rem; padding: 0.3rem 0.9rem; }
+      .api-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- header -->
+  <div class="header">
+    <div>
+      <h1><i class="fas fa-code-branch"></i> Suggestion API</h1>
+      <span class="badge"><i class="fas fa-check-circle" style="color: #2563eb;"></i> 12 endpoints</span>
+    </div>
+    <div class="base-url">
+      <i class="fas fa-link"></i> /api/v1/suggestion
+    </div>
+  </div>
+
+  <!-- grille des cartes -->
+  <div class="api-grid" id="apiGrid">
+    <!-- les cartes seront injectées par JS -->
+  </div>
+
+  <!-- footer -->
+  <div class="footer">
+    <span><i class="fas fa-arrow-right"></i> Tous les endpoints utilisent <strong>Bearer Token</strong> (Auth)</span>
+    <span>📌 <a href="#" onclick="event.preventDefault();">Documentation complète</a></span>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- DONNÉES DES ENDPOINTS ----------
+    const endpoints = [
+      // QR Code
+      {
+        group: 'QR Code',
+        method: 'POST',
+        path: '/generate-qr-code',
+        desc: 'Générer un QR code pour une agence',
+        params: [{ name: 'agency_code', type: 'string', required: true, desc: 'Code agence (body)' }],
+        bodyExample: `{ "agency_code": "AG-001" }`,
+        responseExample: `{
+        "success": true,
+        "message": "QR code generé avec success.",
+        "link": "https://assfin.yakoafricassur.com/qr/550e...",
+        "data": { "uuid": "...", "code": "QRCODE-001", "agency_code": "AG-001", "etat": "actif", "scan_count": 0 }
+      }`
+      },
+      {
+        group: 'QR Code',
+        method: 'GET',
+        path: '/get/qr-codes',
+        desc: 'Liste des QR codes (filtres & pagination)',
+        params: [
+          { name: 'etat', type: 'string', required: false, desc: 'actif / inactif' },
+          { name: 'agency_code', type: 'string', required: false, desc: 'code agence' },
+          { name: 'search', type: 'string', required: false, desc: 'recherche libre' },
+          { name: 'per_page', type: 'integer', required: false, desc: '15 par défaut' },
+          { name: 'all', type: 'boolean', required: false, desc: 'true = tout (sans pagination)' }
+        ],
+        bodyExample: null,
+        responseExample: `{
+        "success": true,
+        "data": [ { "uuid": "...", "code": "QRCODE-001", "scan_count": 12 } ],
+        "meta": { "current_page": 1, "total": 45 }
+      }`
+      },
+      {
+        group: 'QR Code',
+        method: 'PUT',
+        path: '/qr-codes/{uuid}',
+        desc: 'Changer l’état (actif ↔ inactif)',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID du QR code (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "message": "État mis à jour", "data": { "etat": "inactif" } }`
+      },
+      {
+        group: 'QR Code',
+        method: 'POST',
+        path: '/qr-codes/{uuid}/scan',
+        desc: 'Incrémenter le compteur de scans',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID du QR code (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "message": "scan +1", "data": { "scan_count": 16 } }`
+      },
+      {
+        group: 'QR Code',
+        method: 'DELETE',
+        path: '/qr-codes/{uuid}',
+        desc: 'Supprimer un QR code',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID du QR code (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "message": "QR code supprimé" }`
+      },
+      // Catégories
+      {
+        group: 'Catégories',
+        method: 'POST',
+        path: '/cat/create',
+        desc: 'Créer une catégorie',
+        params: [
+          { name: 'libelle', type: 'string', required: true, desc: 'libellé (body)' },
+          { name: 'description', type: 'string', required: false, desc: 'description (body)' },
+          { name: 'etat', type: 'string', required: false, desc: 'actif / inactif (défaut: actif)' }
+        ],
+        bodyExample: `{ "libelle": "Technical Issue", "description": "problèmes techniques", "etat": "actif" }`,
+        responseExample: `{ "success": true, "data": { "uuid": "...", "code": "CAT-001", "libelle": "Technical Issue" } }`
+      },
+      {
+        group: 'Catégories',
+        method: 'GET',
+        path: '/cat/get',
+        desc: 'Liste des catégories (filtre par état)',
+        params: [
+          { name: 'etat', type: 'string', required: false, desc: 'actif / inactif' },
+          { name: 'per_page', type: 'integer', required: false, desc: '10 par défaut' }
+        ],
+        bodyExample: null,
+        responseExample: `{ "success": true, "data": [ { "uuid": "...", "libelle": "Technical Issue" } ], "total": 8 }`
+      },
+      {
+        group: 'Catégories',
+        method: 'PUT',
+        path: '/cat/change/etat/{uuid}',
+        desc: 'Basculer l’état de la catégorie',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID catégorie (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "message": "État modifié", "data": { "etat": "inactif" } }`
+      },
+      {
+        group: 'Catégories',
+        method: 'DELETE',
+        path: '/cat/destroy/{uuid}',
+        desc: 'Supprimer une catégorie',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID catégorie (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "message": "Catégorie supprimée" }`
+      },
+      // Suggestions
+      {
+        group: 'Suggestions',
+        method: 'POST',
+        path: '/create',
+        desc: 'Créer une suggestion',
+        params: [
+          { name: 'uuid_qrcode', type: 'string', required: true, desc: 'QR code lié' },
+          { name: 'note', type: 'string', required: false, desc: 'note' },
+          { name: 'uuid_category', type: 'string', required: false, desc: 'catégorie' },
+          { name: 'nom_client', type: 'string', required: false, desc: 'nom' },
+          { name: 'prenom_client', type: 'string', required: false, desc: 'prénom' },
+          { name: 'tel_client', type: 'string', required: false, desc: 'téléphone' },
+          { name: 'email_client', type: 'string', required: false, desc: 'email' }
+        ],
+        bodyExample: `{ "uuid_qrcode": "550e...", "note": "problème connexion", "nom_client": "Dupont" }`,
+        responseExample: `{ "success": true, "data": { "uuid": "...", "statut": "new" } }`
+      },
+      {
+        group: 'Suggestions',
+        method: 'GET',
+        path: '/get',
+        desc: 'Liste des suggestions (filtres)',
+        params: [
+          { name: 'statut', type: 'string', required: false, desc: 'new / ...' },
+          { name: 'etat', type: 'string', required: false, desc: 'actif / inactif' },
+          { name: 'uuid_qrcode', type: 'string', required: false, desc: 'QR code' }
+        ],
+        bodyExample: null,
+        responseExample: `{ "success": true, "data": [ { "uuid": "...", "statut": "new" } ], "total": 12 }`
+      },
+      {
+        group: 'Suggestions',
+        method: 'GET',
+        path: '/show/{uuid}',
+        desc: 'Détail d’une suggestion (avec traitements)',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID suggestion (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "data": { "uuid": "...", "statut": "new", "treatments": [] } }`
+      },
+      {
+        group: 'Suggestions',
+        method: 'PUT',
+        path: '/change/etat/{uuid}',
+        desc: 'Changer état (actif/inactif)',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID suggestion (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "message": "État modifié" }`
+      },
+      {
+        group: 'Suggestions',
+        method: 'DELETE',
+        path: '/destroy/{uuid}',
+        desc: 'Supprimer une suggestion',
+        params: [{ name: 'uuid', type: 'string', required: true, desc: 'UUID suggestion (path)' }],
+        bodyExample: null,
+        responseExample: `{ "success": true, "message": "Suggestion supprimée" }`
+      },
+      // Traitements
+      {
+        group: 'Traitements',
+        method: 'POST',
+        path: '/treatment/create',
+        desc: 'Créer un traitement (assigner une suggestion)',
+        params: [
+          { name: 'uuid_suggestion', type: 'string', required: true, desc: 'suggestion cible' },
+          { name: 'code_responsable', type: 'string', required: true, desc: 'responsable' },
+          { name: 'action', type: 'string', required: true, desc: 'action effectuée' }
+        ],
+        bodyExample: `{ "uuid_suggestion": "550e...", "code_responsable": "RESP-01", "action": "en cours" }`,
+        responseExample: `{ "success": true, "data": { "uuid": "...", "code": "TRT-001" } }`
+      },
+      {
+        group: 'Traitements',
+        method: 'GET',
+        path: '/treatment/get-by-param',
+        desc: 'Récupérer traitements par paramètres',
+        params: [
+          { name: 'uuid_suggestion', type: 'string', required: false, desc: 'filtre suggestion' },
+          { name: 'etat', type: 'string', required: false, desc: 'actif / inactif' },
+          { name: 'code_responsable', type: 'string', required: false, desc: 'responsable' }
+        ],
+        bodyExample: null,
+        responseExample: `{ "success": true, "data": [ { "uuid": "...", "action": "en cours" } ] }`
+      }
+    ];
+
+    // ---------- RENDU DES CARTES ----------
+    const grid = document.getElementById('apiGrid');
+
+    function renderCards() {
+      let html = '';
+      endpoints.forEach((ep, index) => {
+        // affichage des paramètres
+        let paramsHtml = '';
+        if (ep.params && ep.params.length) {
+          paramsHtml = `<div class="param-list">`;
+          ep.params.forEach(p => {
+            const requiredTag = p.required ? '<span style="color:#b91c1c;">*</span>' : '';
+            paramsHtml += `<div class="param-item">
+              <span class="param-tag">${p.name}</span>
+              <span style="color:#1e4f8a; font-size:0.8rem;">${p.type}</span>
+              <span style="color:#3d5f82; font-size:0.8rem;">${p.desc || ''}</span>
+              ${requiredTag}
+            </div>`;
+          });
+          paramsHtml += `</div>`;
+        }
+
+        // body example
+        let bodyExampleHtml = '';
+        if (ep.bodyExample) {
+          bodyExampleHtml = `<div class="example-box"><i class="fas fa-arrow-right" style="margin-right:6px;color:#4f7aa6;"></i>body ${ep.bodyExample}</div>`;
+        }
+
+        // response preview
+        const responseExample = ep.responseExample || '{ "success": true }';
+
+        // construction de la carte
+        html += `
+          <div class="card" data-index="${index}">
+            <div class="card-header">
+              <span class="method ${ep.method.toLowerCase()}">${ep.method}</span>
+              <span class="endpoint">${ep.path}</span>
+            </div>
+            <div class="card-body">
+              <div class="desc"><i class="fas fa-tag" style="margin-right:6px;color:#2563eb;"></i>${ep.desc}</div>
+              ${paramsHtml}
+              ${bodyExampleHtml}
+              <div class="example-box" style="background:#eaf1fa; border-color:#c7d9ee; margin-top:0.4rem;">
+                <i class="fas fa-reply" style="margin-right:6px;color:#2563eb;"></i> réponse
+                <span style="display:block; margin-top:4px; color:#123456;">${responseExample}</span>
+              </div>
+              <button class="btn-try" data-index="${index}"><i class="fas fa-play"></i> Tester (simulé)</button>
+              <div class="response-area" id="response-${index}">⏳ simulation en cours...</div>
+            </div>
+          </div>
+        `;
+      });
+      grid.innerHTML = html;
+    }
+
+    renderCards();
+
+    // ---------- GESTION DES BOUTONS "TESTER" ----------
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.btn-try');
+      if (!btn) return;
+      const index = btn.getAttribute('data-index');
+      const responseDiv = document.getElementById(`response-${index}`);
+      if (!responseDiv) return;
+
+      // récupérer l'endpoint
+      const ep = endpoints[index];
+      if (!ep) return;
+
+      // Simulation d'appel : on affiche un message + la réponse exemple
+      responseDiv.classList.add('show');
+      responseDiv.style.display = 'block';
+      responseDiv.innerHTML = `🔄 <strong>${ep.method}</strong> ${ep.path}\n\n📦 simulation (auth token requis)\n\n✅ réponse simulée :\n${ep.responseExample || '{ "success": true }'}`;
+
+      // scroll léger
+      responseDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+  })();
+</script>
+</body>
+</html>

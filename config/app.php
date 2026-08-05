@@ -1,5 +1,6 @@
 <?php
 
+use Barryvdh\DomPDF\ServiceProvider;
 use Illuminate\Support\Facades\Facade;
 
 return [
@@ -195,7 +196,6 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
-        Barryvdh\DomPDF\ServiceProvider::class,
 
     ],
 

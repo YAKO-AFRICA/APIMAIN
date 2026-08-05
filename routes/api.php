@@ -20,6 +20,9 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bni\BniController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\Pret\SimulateurPrimeController;
+use App\Http\Controllers\Suggestion\CategoryController;
+use App\Http\Controllers\Suggestion\ESuggestionController;
+use App\Http\Controllers\Suggestion\QrCodeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -215,6 +218,33 @@ Route::get('/yvon/languages', [YvonController::class, 'languages']);
 //    Permet : <script src="https://apimain.yakoafricassur.com/static/widget.js">
 Route::get('/static/widget.js', [YvonWidgetController::class, 'serveWidget']);
 Route::get('/static/yvon.png',  [YvonWidgetController::class, 'serveIcon']);
+
+
+// e-suggestion routes
+Route::prefix('suggestion')->group(function () {
+    Route::post('/generate-qr-code', [QrCodeController::class, 'store']); // methode post avec le code agence "agency_code" dans le body de la requete
+    Route::get('/get/qr-codes', [QrCodeController::class, 'index']); // methode get param de filtre
+    Route::put('/qr-codes/{uuid}', [QrCodeController::class, 'changeEtat']); // methode put pour changer l'etat du qr code
+    Route::post('/qr-codes/{uuid}/scan', [QrCodeController::class, 'countScan']); // methode post pour incrémenter le compteur de scans
+    Route::delete('/qr-codes/{uuid}', [QrCodeController::class, 'destroy']); // methode delete pour supprimer le qr code
+
+    // routes pour la gestion des catégories
+    Route::post('/cat/create', [CategoryController::class, 'store']); // methode post pour créer une catégorie
+    Route::get('/cat/get', [CategoryController::class, 'index']); // methode get pour obtenir les catégories
+    Route::put('/cat/change/etat/{uuid}', [CategoryController::class, 'changeEtat']); // methode put pour changer l'etat de la catégorie
+    Route::delete('/cat/destroy/{uuid}', [CategoryController::class, 'destroy']); // methode delete pour supprimer la catégorie
+
+    // creation des suggestions
+    Route::post('/create', [ESuggestionController::class, 'store']); // methode post pour créer une suggestion
+    Route::get('/get', [ESuggestionController::class, 'index']); // methode get pour obtenir les suggestions
+    Route::get('/show/{uuid}', [ESuggestionController::class, 'show']); // methode get pour obtenir les détails d'une suggestion
+    Route::put('/change/etat/{uuid}', [ESuggestionController::class, 'changeEtat']); // methode put pour changer l'etat de la suggestion
+    Route::delete('/destroy/{uuid}', [ESuggestionController::class, 'destroy']); // methode delete pour supprimer la suggestion
+
+    // gestion des treatment de suggestion
+    Route::post('/treatment/create', [ESuggestionController::class, 'treatmentSuggestion']); // methode post pour créer un traitement de suggestion
+    Route::get('/treatment/get-by-param', [ESuggestionController::class, 'getTreatmentsByParam']); // methode get pour obtenir les traitements en fonction des param
+});
 
 
 

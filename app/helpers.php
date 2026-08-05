@@ -3,7 +3,7 @@
 if (!function_exists('Refgenerate')) {
         function Refgenerate($table, $prefix, $key)
         {
-            $latest = $table::orderBy('id', 'desc')->first();
+            $latest = $table::orderBy('created_at', 'desc')->first();
             if (!$latest || !isset($latest->$key)) {
                 return $prefix . '-00001';
             }

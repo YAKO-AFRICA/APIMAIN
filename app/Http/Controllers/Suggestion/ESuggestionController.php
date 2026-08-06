@@ -35,6 +35,10 @@ class ESuggestionController extends Controller
         if ($request->has('uuid_qrcode')) {
             $query->where('uuid_qrcode', $request->input('uuid_qrcode'));
         }
+        // get sugestion note inferieure ou egale a request note
+        if ($request->has('note')) {
+            $query->where('note', '<=', $request->input('note'));
+        }
 
         // Pagination
         $perPage = $request->input('per_page', 10);
@@ -130,6 +134,7 @@ class ESuggestionController extends Controller
             ], 500);
         }
     }
+
 
     public function changeEtat(string $uuid)
     {

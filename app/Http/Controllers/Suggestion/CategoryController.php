@@ -80,6 +80,42 @@ class CategoryController extends Controller
         }
     }
 
+    public function update(Request $request, string $uuid)
+    {
+        try {
+            // Validation des données de la requête
+            $validatedData = $request->validate([
+                'libelle' => 'required|string|max:255',
+                'description' => 'nullable|string',
+            ]);
+
+            // Récupération de la catégorie à mettre à jour
+            $category = Category::where('uuid', $uuid)->first();
+
+            if (!$category) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Catégorie non trouvée.',
+                ], 404);
+            }
+
+            // Mise à jour des champs de la catégorie
+            $category->update($validatedData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Catégorie mise à jour avec succès.',
+                'data' => $category,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de la catégorie.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function changeEtat(string $uuid)
     {
         try {

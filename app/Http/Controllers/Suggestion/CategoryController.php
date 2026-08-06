@@ -82,12 +82,10 @@ class CategoryController extends Controller
 
     public function update(Request $request, string $uuid)
     {
+
         try {
-            // Validation des données de la requête
-            $validatedData = $request->validate([
-                'libelle' => 'required|string|max:255',
-                'description' => 'nullable|string',
-            ]);
+
+            DB::connection('mysql')->beginTransaction();
 
             // Récupération de la catégorie à mettre à jour
             $category = Category::where('uuid', $uuid)->first();
@@ -100,7 +98,12 @@ class CategoryController extends Controller
             }
 
             // Mise à jour des champs de la catégorie
-            $category->update($validatedData);
+            $category->update([
+                'libelle' => $request->input('libelle', $category->libelle),
+                'description' => $request->input('description', $category->description),
+            ]);
+
+            DB::connection('mysql')->commit();
 
             return response()->json([
                 'success' => true,
@@ -108,6 +111,7 @@ class CategoryController extends Controller
                 'data' => $category,
             ], 200);
         } catch (\Exception $e) {
+            DB::connection('mysql')->rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la mise à jour de la catégorie.',

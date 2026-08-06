@@ -231,7 +231,7 @@ Route::prefix('suggestion')->group(function () {
     // routes pour la gestion des catégories
     Route::post('/cat/create', [CategoryController::class, 'store']); // methode post pour créer une catégorie
     Route::get('/cat/get', [CategoryController::class, 'index']); // methode get pour obtenir les catégories
-    Route::put('/cat/update/{uuid}', [CategoryController::class, 'update']); // methode put pour mettre à jour une catégorie
+    Route::post('/cat/update/{uuid}', [CategoryController::class, 'update']); // methode post pour mettre à jour une catégorie
     Route::put('/cat/change/etat/{uuid}', [CategoryController::class, 'changeEtat']); // methode put pour changer l'etat de la catégorie
     Route::delete('/cat/destroy/{uuid}', [CategoryController::class, 'destroy']); // methode delete pour supprimer la catégorie
 

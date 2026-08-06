@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('uuid')->primary();
             $table->string('code', 64)->unique();
             
-            $table->string('agency_code', 64)->nullable();
+            $table->string('uuid_qrcode', 64)->nullable();
             $table->integer('note')->nullable();
             $table->string('uuid_category', 255)->nullable();
             $table->longText('comment')->nullable();

@@ -23,6 +23,7 @@ use App\Http\Controllers\Pret\SimulateurPrimeController;
 use App\Http\Controllers\Suggestion\CategoryController;
 use App\Http\Controllers\Suggestion\ESuggestionController;
 use App\Http\Controllers\Suggestion\QrCodeController;
+use App\Http\Controllers\Suggestion\StateController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -245,6 +246,9 @@ Route::prefix('suggestion')->group(function () {
     // gestion des treatment de suggestion
     Route::post('/treatment/create', [ESuggestionController::class, 'treatmentSuggestion']); // methode post pour créer un traitement de suggestion
     Route::get('/treatment/get-by-param', [ESuggestionController::class, 'getTreatmentsByParam']); // methode get pour obtenir les traitements en fonction des param
+
+    // state des suggestion tableau de ord 
+    Route::get('/state', [StateController::class, 'State']); // methode get pour obtenir l'état des suggestions
 });
 
 

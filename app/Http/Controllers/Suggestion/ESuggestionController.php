@@ -38,7 +38,7 @@ class ESuggestionController extends Controller
 
         // Pagination
         $perPage = $request->input('per_page', 10);
-        $suggestions = $query->with('treatments')->paginate($perPage);
+        $suggestions = $query->with('treatments','qrCode')->paginate($perPage);
 
         return response()->json(
             [
@@ -73,6 +73,7 @@ class ESuggestionController extends Controller
                 'tel_client' => $request->tel_client,
                 'email_client' => $request->email_client,
                 'statut' => 'new',
+                'etat' => 'actif',
             ]);
 
             DB::connection('mysql')->commit();

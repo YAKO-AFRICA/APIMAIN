@@ -24,4 +24,5 @@ class QrCode extends Model
         'etat',
         'scan_count',
     ];
+
 }

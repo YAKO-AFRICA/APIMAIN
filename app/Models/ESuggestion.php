@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\QrCode;
 use App\Models\SuggestionTreatment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +22,7 @@ class ESuggestion extends Model
     protected $fillable = [
         'uuid',
         'code',
-        'agency_code',
+        'uuid_qrcode',
         'note',
         'uuid_category',
         'comment',
@@ -38,6 +39,11 @@ class ESuggestion extends Model
     public function treatments()
     {
         return $this->hasMany(SuggestionTreatment::class, 'uuid_suggestion', 'uuid');
+    }
+
+    public function qrCode()
+    {
+        return $this->belongsTo(QrCode::class, 'uuid_qrcode', 'uuid');
     }
 
 }

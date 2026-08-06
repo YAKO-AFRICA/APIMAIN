@@ -84,10 +84,8 @@ class CategoryController extends Controller
     {
         try {
 
-            Log::info("Changement d'état de la catégorie avec UUID: $uuid");
             $category = Category::where('uuid', $uuid)->first();
 
-            Log::info("Catégorie trouvée: " . json_encode($category));
 
             if (!$category) {
                 return response()->json([

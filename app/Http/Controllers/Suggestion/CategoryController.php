@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -82,7 +83,11 @@ class CategoryController extends Controller
     public function changeEtat(string $uuid)
     {
         try {
+
+            Log::info("Changement d'état de la catégorie avec UUID: $uuid");
             $category = Category::where('uuid', $uuid)->first();
+
+            Log::info("Catégorie trouvée: " . json_encode($category));
 
             if (!$category) {
                 return response()->json([

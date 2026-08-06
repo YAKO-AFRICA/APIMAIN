@@ -11,6 +11,8 @@ class Category extends Model
 
     protected $connection = 'mysql';
     protected $table = 'categories';
+    protected $primaryKey = 'uuid';
+    public $incrementing = false;
 
     protected $fillable = [
         'uuid',

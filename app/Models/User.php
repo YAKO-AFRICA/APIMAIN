@@ -52,6 +52,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(Membre::class, 'idmembre', 'idmembre');
     }
+    public function zone()
+    {
+        return $this->belongsTo(ZoneByUser::class, 'idmembre', 'responsable_uuid');
+    }
 
     public function role()
     {

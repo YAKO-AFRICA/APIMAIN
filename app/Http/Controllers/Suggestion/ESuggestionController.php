@@ -164,6 +164,36 @@ class ESuggestionController extends Controller
             ], 500);
         }
     }
+    public function changeStatut(Request $request)
+    {
+        try {
+
+            $uuid = $request->input('uuid_suggestion');
+            $ESuggestion = ESuggestion::where('uuid', $uuid)->first();
+
+            if (!$ESuggestion) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Suggestion non trouvée.',
+                ], 404);
+            }
+
+            // changement d'etat de la suggestion
+            $ESuggestion->statut = $request->input('statut');
+            $ESuggestion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Le Statut de la suggestion mis à jour avec succès.',
+                'data' => $ESuggestion,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour du statut de la suggestion: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 
     public function destroy(string $uuid)
     {

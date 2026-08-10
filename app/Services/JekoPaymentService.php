@@ -106,7 +106,7 @@ class JekoPaymentService
             'X-API-KEY-ID' => $this->apiKeyId,
         ])
             ->timeout(10)
-            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->command_number);
+            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->codePaiement);
 
         if (!$response->successful()) {
             return [
@@ -139,27 +139,12 @@ class JekoPaymentService
 
         $payload = $request->getContent();
 
-        // Log::info('Webhook validation', [
-        //     'signature_trouvee' => $signature,
-        //     'payload_length' => strlen($payload),
-        //     'webhook_secret_present' => !empty($this->webhookSecret)
-        // ]);
 
         if (empty($signature) || empty($payload)) {
-            // Log::warning('Signature ou payload vide', [
-            //     'signature_empty' => empty($signature),
-            //     'payload_empty' => empty($payload)
-            // ]);
             return false;
         }
 
         $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
-
-        // Log::info('Comparaison signatures', [
-        //     'signature_recue' => $signature,
-        //     'signature_calculee' => $expectedSignature,
-        //     'correspond' => hash_equals($expectedSignature, $signature)
-        // ]);
 
         return hash_equals($expectedSignature, $signature);
     }
@@ -178,7 +163,7 @@ class JekoPaymentService
         }
 
         // Mettre à jour la transaction
-        $paiement = TblPaiement::where('codePaiement', $reference)->first();
+        $paiement = TblPaiement::where('command_number', $reference)->first();
 
         if (!$paiement) {
             Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);

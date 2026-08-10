@@ -365,7 +365,7 @@
                 </div>
                 <div>
                     <h1>Reçu de paiement</h1>
-                    <span style="font-size:12px; color:#6b7280; font-weight:500;">N° {{ $paiement->codePaiement ?? '' }}</span>
+                    <span style="font-size:12px; color:#6b7280; font-weight:500;">N° {{ $paiement->command_number ?? '' }}</span>
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -403,7 +403,7 @@
             @endif
             <div class="item">
                 <span class="label">Référence transaction</span>
-                <span class="value" style="font-size:12px; font-weight:500; color:#6b7280;">{{ $paiement->command_number ?? '—' }}</span>
+                <span class="value" style="font-size:12px; font-weight:500; color:#6b7280;">{{ $paiement->codePaiement ?? '—' }}</span>
             </div>
         </div>
 

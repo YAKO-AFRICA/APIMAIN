@@ -7,8 +7,6 @@ use App\Models\TblPaiement;
 use App\Services\EncaissementBisService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
 /**
  * Construit le montant à facturer et prépare les enregistrements tblpaiement / tblfacture
  * pour les 3 types de paiement (firstPayment, earlyPayment, recoveryPrime).
@@ -167,7 +165,8 @@ class PrimePaymentOrchestrator
         return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko) {
             // $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
             $paiement = TblPaiement::create([
-                'codePaiement' => $referenceInterne,
+                'command_number' => $referenceInterne,
+                // 'codePaiement' => $referenceInterne,
                 'montant' => $preparation['montantTotal'],
                 'etat' => 1, // en attente de confirmation webhook pour passer à 2
                 'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),

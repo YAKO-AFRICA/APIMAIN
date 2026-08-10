@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Suggestion;
 
 use App\Http\Controllers\Controller;
 use App\Models\ESuggestion;
+use App\Models\QrCode;
 use App\Models\SuggestionTreatment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,10 +32,17 @@ class ESuggestionController extends Controller
             $query->whereDate('created_at', $request->input('date_creation'));
         }
 
-        // Filtrage par qrcode / agence
+        // Filtrage par qrcode 
         if ($request->has('uuid_qrcode')) {
             $query->where('uuid_qrcode', $request->input('uuid_qrcode'));
         }
+
+        // filtre suggestion par agence lier au qrcode
+        if ($request->has('agency_code')) {
+            $qrCodePluckUuid = QrCode::where('agency_code', $request->agency_code)->pluck('uuid');
+            $query->whereIn('uuid_qrcode', $qrCodePluckUuid);
+        }
+        
         // get sugestion note inferieure ou egale a request note
         if ($request->has('note')) {
             $query->where('note', '<=', $request->input('note'));

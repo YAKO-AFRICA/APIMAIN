@@ -36,6 +36,94 @@ class ParamController extends Controller
         ], 201);
     }
 
+    public function updateZone(Request $request, $uuid)
+    {
+        $zone = ZoneByUser::where('uuid', $uuid)->first();
+
+        if (!$zone) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Zone non trouvée.',
+            ], 404);
+        }
+
+        $type = $request->input('type');
+
+        $agencesSelectionnees = $request->input('agence_codes', []);
+
+        // S'assurer que agence_codes est toujours un tableau
+        if (is_string($agencesSelectionnees)) {
+            $decoded = json_decode($agencesSelectionnees, true);
+
+            $agencesSelectionnees = is_array($decoded)
+                ? $decoded
+                : [$agencesSelectionnees];
+        }
+
+        // Récupérer les anciennes agences
+        $agences = $zone->agence_codes ?? [];
+
+        // Si agence_codes est une chaîne
+        if (is_string($agences)) {
+
+            $decoded = json_decode($agences, true);
+
+            if (is_array($decoded)) {
+                $agences = $decoded;
+            } else {
+                $agences = [$agences];
+            }
+        }
+
+        if ($type === 'add') {
+
+            // Ajouter les nouvelles agences
+            $agences = array_merge(
+                $agences,
+                $agencesSelectionnees
+            );
+
+            // Supprimer les doublons
+            $agences = array_values(
+                array_unique($agences)
+            );
+
+        } elseif ($type === 'delete') {
+
+            // Retirer les agences sélectionnées
+            $agences = array_values(
+                array_diff(
+                    $agences,
+                    $agencesSelectionnees
+                )
+            );
+
+        } else {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Le type doit être "add" ou "delete".',
+            ], 400);
+        }
+
+        // Mise à jour
+        $zone->update([
+            'libelle' => $request->libelle ?? $zone->libelle,
+            'responsable_uuid' => $request->responsable_uuid ?? $zone->responsable_uuid,
+            'agence_codes' => $agences,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Zone mise à jour avec succès.',
+            'data' => [
+                'zone' => $zone,
+                'user' => $zone->user,
+                'agences' => $agences,
+            ],
+        ], 200);
+    }
+
     public function getZoneByUser(Request $request)
     {
         $query = ZoneByUser::query();

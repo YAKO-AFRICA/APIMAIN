@@ -45,6 +45,7 @@ class StateController extends Controller
         if ($request->has('agency_code')) {
             $qrCodePluckUuid = QrCode::where('agency_code', $request->agency_code)->pluck('uuid');
             $query->whereIn('uuid_qrcode', $qrCodePluckUuid);
+            
         }
 
         // calcule de la note moyenne des suggestions
@@ -57,8 +58,13 @@ class StateController extends Controller
         $query->selectRaw('count(*) as nombre_total_suggestions');
 
         // compter toute les fois ou un qr code a été scanné
-        $qrCodeScan = QrCode::select('scan_count')->sum('scan_count');
-        $query->selectRaw($qrCodeScan . ' as nombre_total_qr_code_scan');
+        if ($request->has('agency_code')) {
+            $qrCodeScan = QrCode::select('scan_count', 'agency_code')->where('agency_code', $request->agency_code)->sum('scan_count');
+            $query->selectRaw($qrCodeScan . ' as nombre_total_qr_code_scan');
+        } else {
+            $qrCodeScan = QrCode::select('scan_count')->sum('scan_count');
+            $query->selectRaw($qrCodeScan . ' as nombre_total_qr_code_scan');
+        }
 
         // calcule du taux de particapation des suggestions par rapport au nombre de scan de qr code
         $query->selectRaw('CASE WHEN ' . $qrCodeScan . ' > 0 THEN (count(*) / ' . $qrCodeScan . ') * 100 ELSE 0 END as taux_participation');

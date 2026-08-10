@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Suggestion;
 use App\Http\Controllers\Controller;
 use App\Models\ESuggestion;
 use App\Models\QrCode;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class StateController extends Controller
@@ -34,10 +35,17 @@ class StateController extends Controller
         }
 
         // filtre par plage de date de creation
+        // if ($request->filled('date_debut') && $request->filled('date_fin')) {
+        //     $query->whereBetween('created_at', [
+        //         $request->date_debut,
+        //         $request->date_fin,
+        //     ]);
+        // }
+        // filtre par plage de date de creation
         if ($request->filled('date_debut') && $request->filled('date_fin')) {
             $query->whereBetween('created_at', [
-                $request->date_debut,
-                $request->date_fin,
+                Carbon::parse($request->date_debut)->startOfDay(),
+                Carbon::parse($request->date_fin)->endOfDay(),
             ]);
         }
 

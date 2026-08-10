@@ -35,4 +35,32 @@ class ParamController extends Controller
             ],
         ], 201);
     }
+
+    public function getZoneByUser(Request $request)
+    {
+        $query = ZoneByUser::query();
+
+        // Filtrer par code de zone
+        if ($request->has('code')) {
+            $query->where('code', $request->code);
+        }
+
+        // Filtrer par responsable_uuid
+        if ($request->has('responsable_uuid')) {
+            $query->where('responsable_uuid', $request->responsable_uuid);
+        }
+
+        // Filtrer par agence_codes
+        // if ($request->has('agence_code')) {
+        //     $query->whereJsonContains('agence_codes', $request->agence_code);
+        // }
+
+        $zones = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Zones récupérées avec succès.',
+            'data' => $zones,
+        ], 200);
+    }
 }

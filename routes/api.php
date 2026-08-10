@@ -251,7 +251,8 @@ Route::prefix('suggestion')->group(function () {
 
     // parametrage de zone par utilisateur
     Route::post('/store/zone-by-user', [ParamController::class, 'paramStoreZoneByUser']); // methode post pour créer une zone par utilisateur
-    Route::get('/get/zone-by-user', [ParamController::class, 'getZoneByUser']); // methode get pour obtenir les zones par utilisateur
+    Route::get('/get/zone', [ParamController::class, 'getZoneByUser']); // methode get pour obtenir les zones par utilisateur
+    Route::get('/get/zone/{uuid}', [ParamController::class, 'showZoneByUser']); // methode get pour obtenir les détails d'une zone par utilisateur
 
     // state des suggestion tableau de ord 
     Route::get('/state', [StateController::class, 'State']); // methode get pour obtenir l'état des suggestions

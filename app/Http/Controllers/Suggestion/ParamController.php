@@ -51,9 +51,9 @@ class ParamController extends Controller
         }
 
         // Filtrer par agence_codes
-        // if ($request->has('agence_code')) {
-        //     $query->whereJsonContains('agence_codes', $request->agence_code);
-        // }
+        if ($request->has('agence_code')) {
+            $query->whereJsonContains('agence_codes', $request->agence_code);
+        }
 
         $zones = $query->get();
 
@@ -61,6 +61,24 @@ class ParamController extends Controller
             'success' => true,
             'message' => 'Zones récupérées avec succès.',
             'data' => $zones,
+        ], 200);
+    }
+
+    public function showZoneByUser($uuid)
+    {
+        $zone = ZoneByUser::where('uuid', $uuid)->first();
+
+        if (!$zone) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Zone non trouvée.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Zone récupérée avec succès.',
+            'data' => $zone,
         ], 200);
     }
 }

@@ -10,7 +10,6 @@ use App\Models\TblPaiement;
 use App\Services\EncaissementBisService;
 use App\Services\JekoPaymentService;
 use App\Services\PrimePaymentOrchestrator;
-// use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -293,7 +292,7 @@ class  JekoPaymentController extends Controller
     public function verifierStatut(Request $request, string $referenceInterne): JsonResponse
     {
         try {
-            $paiement = TblPaiement::where('codePaiement', $referenceInterne)->first();
+            $paiement = TblPaiement::where('command_number', $referenceInterne)->first();
  
             if (!$paiement) {
                 return response()->json([
@@ -352,7 +351,7 @@ class  JekoPaymentController extends Controller
                 return response()->json(['status' => 'ignored'], 200);
             }
  
-            $paiement = TblPaiement::where('codePaiement', $reference)->first();
+            $paiement = TblPaiement::where('command_number', $reference)->first();
  
             if (!$paiement) {
                 Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
@@ -362,20 +361,26 @@ class  JekoPaymentController extends Controller
             // $nouvelEtat = $this->mapperStatutVersEtat($statutJeko);
             // $ancienEtat = $paiement->etat;
  
+            $phone = preg_replace('/\D/', '', $payload['counterpartIdentifier']);
+            $phone = substr($phone, -10);
+
             $paiement->etat = 2;
+            $paiement->codePaiement = $payload['transactionDetails']['paymentLinkId'] ?? null;
             $paiement->payment_status = $statutJeko;
-            $paiement->telpaiement = $payload['counterpartIdentifier'] ?? null;
+            
+            $paiement->telpaiement = $phone ?? null;
             $paiement->paid_sum = (int) $payload['amount']['amount'] / 100 ?? null;
             $paiement->paid_amount = (int) $payload['amount']['amount'] / 100 ?? null;
             $paiement->payment_token = $payload['transactionDetails']['paymentLinkId'] ?? null;
-            $paiement->command_number = $payload['id'] ?? null;
+            // $paiement->command_number = $payload['id'] ?? null;
             $paiement->payment_validation_date = Carbon::now()->format('Y-m-d H:i:s');
             $paiement->reponse_webhook = array_merge($paiement->reponse_webhook ?? [], ['webhook' => $payload, 'date_maj' => now()]);
             $paiement->save();
  
             // Propage le statut aux factures liées (même codePaiement)
-            TblFacture::where('codePaiement', $paiement->codePaiement)->update([
+            TblFacture::where('codePaiement', $paiement->command_number)->update([
                 'etat' => 2,
+                'codePaiement' => $payload['transactionDetails']['paymentLinkId']
             ]);
             $this->generateReceipt($paiement->codePaiement, $paiement->typeReglement);
  

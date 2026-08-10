@@ -22,9 +22,9 @@ class ReceiptController extends Controller
             'earlyPayment' => 'Paiement anticipé',
             'recoveryPrime' => 'Régularisation de primes',
         ];
-        $paiement = TblPaiement::where('codePaiement', $referenceInterne)->firstOrFail();
+        $paiement = TblPaiement::where('command_number', $referenceInterne)->firstOrFail();
 
-        $factures = TblFacture::where('codePaiement', $referenceInterne)
+        $factures = TblFacture::where('codePaiement', $paiement->codePaiement)
             ->orderBy('dateAjout')
             ->get()
             ->map(function ($facture) use ($libellesTypeFacture) {

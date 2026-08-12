@@ -177,6 +177,7 @@ class PrimePaymentOrchestrator
                 'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : null,
                 // 'typeReference' => $donnees['paymentType'],
                 'typeReglement' => $donnees['paymentType'],
+                'reglementSource' => 'JEKO',
                 'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? $donnees['idProposition'] : null,
                 // 'referenceSource' => $preparation['referenceSource'],
                 'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),

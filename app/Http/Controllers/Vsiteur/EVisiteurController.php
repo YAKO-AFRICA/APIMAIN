@@ -142,8 +142,8 @@ class EVisiteurController extends Controller
             // Génération du code
             $code = Refgenerate(Evisite::class, 'VIS', 'code');
             
-            // Préparation des données avec des valeurs par défaut
-            $data = [
+            
+            $visite = Evisite::create([
                 'uuid' => Str::uuid(),
                 'code' => $code,
                 'nom' => $request->input('nom'),
@@ -157,14 +157,7 @@ class EVisiteurController extends Controller
                 'num_piece' => $request->input('num_piece'),
                 'agence' => $request->input('agence'),
                 'notes' => $request->input('notes'),
-            ];
-            
-            // Filtrer les valeurs null pour garder les valeurs par défaut de la base
-            $data = array_filter($data, function($value) {
-                return $value !== null;
-            });
-            
-            $visite = Evisite::create($data);
+            ]);
             
             DB::commit();
             

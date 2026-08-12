@@ -38,6 +38,7 @@ class PaiementController extends Controller
                 // 'idproposition' => 0,
                 // 'typeReference' => 0,
                 'referenceSource' => $idTransaction,
+                'reglementSource' => 'MAXIT',
                 // 'nombreDePrime' => 0,
                 // 'num_souscripteur' => 0,
                 // 'frais_adhesion' => 0,

@@ -85,7 +85,7 @@ class ApiController extends Controller
             $password = $request->password;
 
             // Vérifier si l'email existe
-            $user = User::where('email', $email)->with('membre', 'role')->first();
+            $user = User::where('email', $email)->with('membre', 'role', 'zone')->first();
 
 
             if (!$user) {

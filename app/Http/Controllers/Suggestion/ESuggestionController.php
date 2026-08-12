@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Suggestion;
 
 use App\Http\Controllers\Controller;
 use App\Models\ESuggestion;
+use App\Models\QrCode;
 use App\Models\SuggestionTreatment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,10 +32,17 @@ class ESuggestionController extends Controller
             $query->whereDate('created_at', $request->input('date_creation'));
         }
 
-        // Filtrage par qrcode / agence
+        // Filtrage par qrcode 
         if ($request->has('uuid_qrcode')) {
             $query->where('uuid_qrcode', $request->input('uuid_qrcode'));
         }
+
+        // filtre suggestion par agence lier au qrcode
+        if ($request->has('agency_code')) {
+            $qrCodePluckUuid = QrCode::where('agency_code', $request->agency_code)->pluck('uuid');
+            $query->whereIn('uuid_qrcode', $qrCodePluckUuid);
+        }
+        
         // get sugestion note inferieure ou egale a request note
         if ($request->has('note')) {
             $query->where('note', '<=', $request->input('note'));
@@ -161,6 +169,36 @@ class ESuggestionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la mise à jour de l\'état de la suggestion: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function changeStatut(Request $request)
+    {
+        try {
+
+            $uuid = $request->input('uuid_suggestion');
+            $ESuggestion = ESuggestion::where('uuid', $uuid)->first();
+
+            if (!$ESuggestion) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Suggestion non trouvée.',
+                ], 404);
+            }
+
+            // changement d'etat de la suggestion
+            $ESuggestion->statut = $request->input('statut');
+            $ESuggestion->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Le Statut de la suggestion mis à jour avec succès.',
+                'data' => $ESuggestion,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour du statut de la suggestion: ' . $e->getMessage(),
             ], 500);
         }
     }

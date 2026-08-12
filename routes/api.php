@@ -22,6 +22,7 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\Pret\SimulateurPrimeController;
 use App\Http\Controllers\Suggestion\CategoryController;
 use App\Http\Controllers\Suggestion\ESuggestionController;
+use App\Http\Controllers\Suggestion\ParamController;
 use App\Http\Controllers\Suggestion\QrCodeController;
 use App\Http\Controllers\Suggestion\StateController;
 use Illuminate\Http\Request;
@@ -241,11 +242,18 @@ Route::prefix('suggestion')->group(function () {
     Route::get('/get', [ESuggestionController::class, 'index']); // methode get pour obtenir les suggestions
     Route::get('/show/{uuid}', [ESuggestionController::class, 'show']); // methode get pour obtenir les détails d'une suggestion
     Route::put('/change/etat/{uuid}', [ESuggestionController::class, 'changeEtat']); // methode put pour changer l'etat de la suggestion
+    Route::post('/change/statut', [ESuggestionController::class, 'changeStatut']); // methode post pour changer le statut de la suggestion
     Route::delete('/destroy/{uuid}', [ESuggestionController::class, 'destroy']); // methode delete pour supprimer la suggestion
 
     // gestion des treatment de suggestion
     Route::post('/treatment/create', [ESuggestionController::class, 'treatmentSuggestion']); // methode post pour créer un traitement de suggestion
     Route::get('/treatment/get-by-param', [ESuggestionController::class, 'getTreatmentsByParam']); // methode get pour obtenir les traitements en fonction des param
+
+    // parametrage de zone par utilisateur
+    Route::post('/store/zone-by-user', [ParamController::class, 'paramStoreZoneByUser']); // methode post pour créer une zone par utilisateur
+    Route::get('/get/zone', [ParamController::class, 'getZoneByUser']); // methode get pour obtenir les zones par utilisateur
+    Route::get('/get/zone/{uuid}', [ParamController::class, 'showZoneByUser']); // methode get pour obtenir les détails d'une zone par utilisateur
+    Route::post('/update/zone/{uuid}', [ParamController::class, 'updateZone']); // methode put pour mettre à jour une zone par utilisateur
 
     // state des suggestion tableau de ord 
     Route::get('/state', [StateController::class, 'State']); // methode get pour obtenir l'état des suggestions

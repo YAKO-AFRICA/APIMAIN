@@ -28,6 +28,7 @@ class TblPaiement extends Model
         'payment_validation_date',
         'typePaiement',
         'typeReglement',
+        'reglementSource',
         'idproposition',
         'idContrat',
         'referenceSource',

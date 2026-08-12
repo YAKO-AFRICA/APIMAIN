@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Gestion des Visiteurs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f6f8fa;
+            color: #24292e;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #0366d6;
+            border-bottom: 3px solid #0366d6;
+            padding-bottom: 20px;
+        }
+
+        .subtitle {
+            color: #586069;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .base-url {
+            background: #f1f8ff;
+            border: 1px solid #c8e1ff;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #0366d6;
+        }
+
+        .base-url strong {
+            color: #24292e;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #24292e;
+            border-bottom: 2px solid #e1e4e8;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #24292e;
+        }
+
+        h4 {
+            font-size: 1.1rem;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #24292e;
+        }
+
+        .endpoint {
+            background: #f6f8fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #0366d6;
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .method-get {
+            background: #2cbe4e;
+            color: white;
+        }
+
+        .method-post {
+            background: #2b6cb0;
+            color: white;
+        }
+
+        .method-put {
+            background: #d19b00;
+            color: white;
+        }
+
+        .method-delete {
+            background: #cb2431;
+            color: white;
+        }
+
+        .endpoint-url {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #24292e;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            border: 1px solid #e1e4e8;
+        }
+
+        .description {
+            color: #586069;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0 20px 0;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: #f1f3f5;
+            text-align: left;
+            padding: 12px 15px;
+            border: 1px solid #e1e4e8;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 15px;
+            border: 1px solid #e1e4e8;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 15px 0 20px 0;
+            position: relative;
+        }
+
+        .code-block .label {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 0.75rem;
+            color: #888;
+            background: #2d2d2d;
+            padding: 2px 10px;
+            border-radius: 3px;
+        }
+
+        .code-block .comment {
+            color: #6a9955;
+        }
+
+        .code-block .string {
+            color: #ce9178;
+        }
+
+        .code-block .key {
+            color: #9cdcfe;
+        }
+
+        .code-block .number {
+            color: #b5cea8;
+        }
+
+        .code-block .boolean {
+            color: #569cd6;
+        }
+
+        .code-block .null {
+            color: #569cd6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-required {
+            background: #ffe0e0;
+            color: #cb2431;
+        }
+
+        .badge-optional {
+            background: #e1e4e8;
+            color: #586069;
+        }
+
+        .error-codes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .error-card {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            border-left: 4px solid #cb2431;
+        }
+
+        .error-card .code {
+            font-weight: bold;
+            color: #cb2431;
+            font-size: 1.1rem;
+        }
+
+        .error-card .desc {
+            color: #586069;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .example-section {
+            margin: 20px 0;
+        }
+
+        .example-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 0;
+            border-bottom: 2px solid #e1e4e8;
+        }
+
+        .example-tab {
+            padding: 8px 16px;
+            background: #f1f3f5;
+            border: 1px solid #e1e4e8;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .example-tab.active {
+            background: white;
+            border-bottom: 2px solid #0366d6;
+            font-weight: 600;
+        }
+
+        .example-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .example-content.active {
+            display: block;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .note strong {
+            color: #856404;
+        }
+
+        .note-success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .note-success strong {
+            color: #155724;
+        }
+
+        .note-info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+        }
+
+        .note-info strong {
+            color: #0c5460;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #e1e4e8;
+            text-align: center;
+            color: #586069;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .endpoint-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            .error-codes {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📋 API Documentation</h1>
+    <div class="subtitle">Gestion des Visiteurs - Version 1.0.0</div>
+
+    <div class="base-url">
+        <strong>Base URL :</strong> <span id="baseUrl">http://votre-domaine.com/api</span>
+        <button onclick="copyBaseUrl()" style="margin-left: 10px; padding: 4px 12px; background: #0366d6; color: white; border: none; border-radius: 4px; cursor: pointer;">Copier</button>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ENDPOINT 1 - GET /visite/get -->
+    <!-- ============================================ -->
+
+    <h2>Endpoints</h2>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method method-get">GET</span>
+            <span class="endpoint-url">/visite/get</span>
+        </div>
+        <div class="description">
+            Récupère la liste des visiteurs avec possibilité de filtrage, tri et pagination.
+        </div>
+
+        <h4>📌 Paramètres de requête</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Paramètre</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Requis</th>
+                    <th>Exemple</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>search</code></td>
+                    <td>string</td>
+                    <td>Recherche par nom ou prénoms</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>search=Dupont</code></td>
+                </tr>
+                <tr>
+                    <td><code>code</code></td>
+                    <td>string</td>
+                    <td>Filtre par code unique du visiteur</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>code=VIS202608150001</code></td>
+                </tr>
+                <tr>
+                    <td><code>motif_uuid</code></td>
+                    <td>string</td>
+                    <td>Filtre par UUID du motif</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>motif_uuid=550e8400-...</code></td>
+                </tr>
+                <tr>
+                    <td><code>date_debut</code></td>
+                    <td>date</td>
+                    <td>Date de début de la plage de visite</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>date_debut=2026-08-01</code></td>
+                </tr>
+                <tr>
+                    <td><code>date_fin</code></td>
+                    <td>date</td>
+                    <td>Date de fin de la plage de visite</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>date_fin=2026-08-31</code></td>
+                </tr>
+                <tr>
+                    <td><code>date</code></td>
+                    <td>date</td>
+                    <td>Filtre par date exacte de visite</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>date=2026-08-15</code></td>
+                </tr>
+                <tr>
+                    <td><code>statut</code></td>
+                    <td>string</td>
+                    <td>Filtre par statut</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>statut=actif</code></td>
+                </tr>
+                <tr>
+                    <td><code>sort_by</code></td>
+                    <td>string</td>
+                    <td>Champ de tri</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>sort_by=nom</code></td>
+                </tr>
+                <tr>
+                    <td><code>sort_direction</code></td>
+                    <td>string</td>
+                    <td>Direction du tri (<code>asc</code> ou <code>desc</code>)</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>sort_direction=asc</code></td>
+                </tr>
+                <tr>
+                    <td><code>per_page</code></td>
+                    <td>integer</td>
+                    <td>Nombre d'éléments par page</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>per_page=15</code></td>
+                </tr>
+                <tr>
+                    <td><code>page</code></td>
+                    <td>integer</td>
+                    <td>Numéro de la page</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>page=2</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>📤 Exemple de réponse (Succès - Avec pagination)</h4>
+        <div class="code-block">
+            <span class="label">JSON</span>
+            <pre>{
+    <span class="key">"success"</span>: <span class="boolean">true</span>,
+    <span class="key">"message"</span>: <span class="string">"Liste des visiteurs"</span>,
+    <span class="key">"data"</span>: [
+        {
+            <span class="key">"id"</span>: <span class="number">1</span>,
+            <span class="key">"uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+            <span class="key">"code"</span>: <span class="string">"VIS202608150001"</span>,
+            <span class="key">"nom"</span>: <span class="string">"Dupont"</span>,
+            <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
+            <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
+            <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
+            <span class="key">"motif_uuid"</span>: <span class="string">"motif-uuid-123"</span>,
+            <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
+            <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
+            <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
+            <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
+            <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+            <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
+            <span class="key">"created_at"</span>: <span class="string">"2026-08-15 09:30:00"</span>,
+            <span class="key">"updated_at"</span>: <span class="string">"2026-08-15 09:30:00"</span>
+        }
+    ],
+    <span class="key">"pagination"</span>: {
+        <span class="key">"current_page"</span>: <span class="number">1</span>,
+        <span class="key">"last_page"</span>: <span class="number">5</span>,
+        <span class="key">"per_page"</span>: <span class="number">15</span>,
+        <span class="key">"total"</span>: <span class="number">75</span>,
+        <span class="key">"from"</span>: <span class="number">1</span>,
+        <span class="key">"to"</span>: <span class="number">15</span>
+    }
+}</pre>
+        </div>
+
+        <h4>📤 Exemple de réponse (Succès - Sans pagination)</h4>
+        <div class="code-block">
+            <span class="label">JSON</span>
+            <pre>{
+    <span class="key">"success"</span>: <span class="boolean">true</span>,
+    <span class="key">"message"</span>: <span class="string">"Liste des visiteurs"</span>,
+    <span class="key">"data"</span>: [...],
+    <span class="key">"total"</span>: <span class="number">75</span>
+}</pre>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ENDPOINT 2 - POST /visite/store -->
+    <!-- ============================================ -->
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method method-post">POST</span>
+            <span class="endpoint-url">/visite/store</span>
+        </div>
+        <div class="description">
+            Crée un nouveau visiteur.
+        </div>
+
+        <h4>📥 Corps de la requête</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Champ</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Requis</th>
+                    <th>Exemple</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>nom</code></td>
+                    <td>string</td>
+                    <td>Nom du visiteur</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>"Dupont"</code></td>
+                </tr>
+                <tr>
+                    <td><code>prenoms</code></td>
+                    <td>string</td>
+                    <td>Prénoms du visiteur</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>"Jean"</code></td>
+                </tr>
+                <tr>
+                    <td><code>mobile</code></td>
+                    <td>string</td>
+                    <td>Numéro de téléphone</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>"0102030405"</code></td>
+                </tr>
+                <tr>
+                    <td><code>email</code></td>
+                    <td>string</td>
+                    <td>Adresse email</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>"jean.dupont@email.com"</code></td>
+                </tr>
+                <tr>
+                    <td><code>motif_uuid</code></td>
+                    <td>string</td>
+                    <td>UUID du motif de la visite</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>"550e8400-e29b-41d4-a716-446655440000"</code></td>
+                </tr>
+                <tr>
+                    <td><code>personne_visite</code></td>
+                    <td>string</td>
+                    <td>Personne à visiter</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>"M. Martin"</code></td>
+                </tr>
+                <tr>
+                    <td><code>date_de_visite</code></td>
+                    <td>datetime</td>
+                    <td>Date et heure de la visite</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>"2026-08-15 10:00:00"</code></td>
+                </tr>
+                <tr>
+                    <td><code>nature_piece</code></td>
+                    <td>string</td>
+                    <td>Nature de la pièce d'identité</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>"CNI"</code></td>
+                </tr>
+                <tr>
+                    <td><code>num_piece</code></td>
+                    <td>string</td>
+                    <td>Numéro de la pièce d'identité</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>"CNI123456"</code></td>
+                </tr>
+                <tr>
+                    <td><code>agence</code></td>
+                    <td>string</td>
+                    <td>Agence concernée</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>"Abidjan"</code></td>
+                </tr>
+                <tr>
+                    <td><code>notes</code></td>
+                    <td>string</td>
+                    <td>Notes complémentaires</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>"Visite importante"</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>📤 Exemple de requête</h4>
+        <div class="code-block">
+            <span class="label">cURL</span>
+            <pre>curl -X POST <span class="string">"http://votre-domaine.com/api/visite/store"</span> \
+-H <span class="string">"Content-Type: application/json"</span> \
+-d '{
+    <span class="key">"nom"</span>: <span class="string">"Dupont"</span>,
+    <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
+    <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
+    <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
+    <span class="key">"motif_uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+    <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
+    <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
+    <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
+    <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
+    <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+    <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>
+}'</pre>
+        </div>
+
+        <h4>📤 Exemple de réponse (Succès)</h4>
+        <div class="code-block">
+            <span class="label">JSON</span>
+            <pre>{
+    <span class="key">"success"</span>: <span class="boolean">true</span>,
+    <span class="key">"message"</span>: <span class="string">"Visiteur créé avec succès."</span>,
+    <span class="key">"data"</span>: {
+        <span class="key">"uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+        <span class="key">"code"</span>: <span class="string">"VIS202608150001"</span>,
+        <span class="key">"nom"</span>: <span class="string">"Dupont"</span>,
+        <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
+        <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
+        <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
+        <span class="key">"motif_uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+        <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
+        <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
+        <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
+        <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
+        <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+        <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
+        <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
+        <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
+    }
+}</pre>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ENDPOINT 3 - GET /visite/show/{uuid} -->
+    <!-- ============================================ -->
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method method-get">GET</span>
+            <span class="endpoint-url">/visite/show/{uuid}</span>
+        </div>
+        <div class="description">
+            Récupère les détails d'un visiteur spécifique via son UUID.
+        </div>
+
+        <h4>📌 Paramètres d'URL</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Paramètre</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Requis</th>
+                    <th>Exemple</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>uuid</code></td>
+                    <td>string</td>
+                    <td>UUID unique du visiteur</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>550e8400-e29b-41d4-a716-446655440000</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>📤 Exemple de requête</h4>
+        <div class="code-block">
+            <span class="label">cURL</span>
+            <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/visite/show/550e8400-e29b-41d4-a716-446655440000"</span> \
+-H <span class="string">"Content-Type: application/json"</span></pre>
+        </div>
+
+        <h4>📤 Exemple de réponse (Succès)</h4>
+        <div class="code-block">
+            <span class="label">JSON</span>
+            <pre>{
+    <span class="key">"success"</span>: <span class="boolean">true</span>,
+    <span class="key">"message"</span>: <span class="string">"Visiteur trouvé avec succès."</span>,
+    <span class="key">"data"</span>: {
+        <span class="key">"id"</span>: <span class="number">1</span>,
+        <span class="key">"uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+        <span class="key">"code"</span>: <span class="string">"VIS202608150001"</span>,
+        <span class="key">"nom"</span>: <span class="string">"Dupont"</span>,
+        <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
+        <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
+        <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
+        <span class="key">"motif_uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+        <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
+        <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
+        <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
+        <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
+        <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+        <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
+        <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
+        <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
+    }
+}</pre>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- CODES D'ERREUR -->
+    <!-- ============================================ -->
+
+    <h2>Codes d'erreur</h2>
+
+    <div class="error-codes">
+        <div class="error-card">
+            <div class="code">400</div>
+            <div class="desc">Requête invalide - Format UUID incorrect</div>
+        </div>
+        <div class="error-card">
+            <div class="code">404</div>
+            <div class="desc">Ressource non trouvée</div>
+        </div>
+        <div class="error-card">
+            <div class="code">500</div>
+            <div class="desc">Erreur interne du serveur</div>
+        </div>
+    </div>
+
+    <h4>Exemple d'erreur</h4>
+    <div class="code-block">
+        <span class="label">JSON</span>
+        <pre>{
+    <span class="key">"success"</span>: <span class="boolean">false</span>,
+    <span class="key">"message"</span>: <span class="string">"Format d'UUID invalide."</span>
+}</pre>
+    </div>
+
+    <div class="code-block">
+        <span class="label">JSON</span>
+        <pre>{
+    <span class="key">"success"</span>: <span class="boolean">false</span>,
+    <span class="key">"message"</span>: <span class="string">"Visiteur non trouvé."</span>
+}</pre>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- EXEMPLES COMPLETS -->
+    <!-- ============================================ -->
+
+    <h2>Exemples complets</h2>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 1 :</strong> Récupérer tous les visiteurs avec pagination
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/visite/get?per_page=10&page=1"</span></pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 2 :</strong> Rechercher un visiteur par nom
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/visite/get?search=Dupont"</span></pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 3 :</strong> Filtrer les visiteurs par plage de dates
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/visite/get?date_debut=2026-08-01&date_fin=2026-08-31"</span></pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 4 :</strong> Créer un visiteur
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X POST <span class="string">"http://votre-domaine.com/api/visite/store"</span> \
+-H <span class="string">"Content-Type: application/json"</span> \
+-d '{
+    <span class="key">"nom"</span>: <span class="string">"Dupont"</span>,
+    <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
+    <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
+    <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
+    <span class="key">"motif_uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+    <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
+    <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
+    <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
+    <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
+    <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+    <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>
+}'</pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 5 :</strong> Récupérer les détails d'un visiteur
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/visite/show/550e8400-e29b-41d4-a716-446655440000"</span></pre>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- NOTES -->
+    <!-- ============================================ -->
+
+    <h2>Notes importantes</h2>
+
+    <div class="note note-info">
+        <strong>ℹ️ Génération automatique :</strong>
+        <ul style="margin-top: 8px; padding-left: 20px;">
+            <li>Le champ <code>uuid</code> est généré automatiquement via <code>Str::uuid()</code></li>
+            <li>Le champ <code>code</code> est généré automatiquement via la fonction <code>Refgenerate()</code></li>
+            <li>Les champs <code>created_at</code> et <code>updated_at</code> sont gérés automatiquement par Laravel</li>
+        </ul>
+    </div>
+
+    <div class="note note-info">
+        <strong>ℹ️ Transactions :</strong>
+        <ul style="margin-top: 8px; padding-left: 20px;">
+            <li>La création d'un visiteur est effectuée dans une transaction SQL</li>
+            <li>En cas d'erreur, toutes les modifications sont annulées (rollback)</li>
+            <li>Les erreurs sont automatiquement journalisées dans les logs Laravel</li>
+        </ul>
+    </div>
+
+    <div class="note note-info">
+        <strong>ℹ️ Format des dates :</strong>
+        <ul style="margin-top: 8px; padding-left: 20px;">
+            <li>Format attendu pour <code>date_de_visite</code> : <code>YYYY-MM-DD HH:mm:ss</code></li>
+            <li>Format attendu pour les filtres : <code>YYYY-MM-DD</code></li>
+            <li>Les dates de réponse sont au format ISO 8601 (<code>YYYY-MM-DDTHH:mm:ss.000000Z</code>)</li>
+        </ul>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- FOOTER -->
+    <!-- ============================================ -->
+
+    <div class="footer">
+        <p>Documentation générée automatiquement - Version 1.0.0</p>
+        <p style="margin-top: 5px; font-size: 0.8rem; color: #6a737d;">
+            Dernière mise à jour : Août 2026
+        </p>
+    </div>
+</div>
+
+<script>
+    // Copier la base URL dans le presse-papier
+    function copyBaseUrl() {
+        const url = document.getElementById('baseUrl').textContent;
+        navigator.clipboard.writeText(url).then(() => {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copié !';
+            btn.style.background = '#28a745';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#0366d6';
+            }, 2000);
+        });
+    }
+
+    // Gestion des onglets d'exemples (si vous en ajoutez)
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabs = document.querySelectorAll('.example-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const parent = this.closest('.example-section');
+                const contentId = this.dataset.target;
+                
+                // Désactiver tous les onglets et contenus
+                parent.querySelectorAll('.example-tab').forEach(t => t.classList.remove('active'));
+                parent.querySelectorAll('.example-content').forEach(c => c.classList.remove('active'));
+                
+                // Activer l'onglet cliqué et son contenu
+                this.classList.add('active');
+                document.getElementById(contentId).classList.add('active');
+            });
+        });
+    });
+</script>
+
+</body>
+</html>

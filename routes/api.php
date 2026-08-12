@@ -25,6 +25,7 @@ use App\Http\Controllers\Suggestion\ESuggestionController;
 use App\Http\Controllers\Suggestion\ParamController;
 use App\Http\Controllers\Suggestion\QrCodeController;
 use App\Http\Controllers\Suggestion\StateController;
+use App\Http\Controllers\Vsiteur\EVisiteurController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -257,6 +258,13 @@ Route::prefix('suggestion')->group(function () {
 
     // state des suggestion tableau de ord 
     Route::get('/state', [StateController::class, 'State']); // methode get pour obtenir l'état des suggestions
+
+});
+
+Route::prefix('visite')->group(function () {
+    Route::get('/get', [EVisiteurController::class, 'index']); // methode get pour obtenir les visites
+    Route::post('/store', [EVisiteurController::class, 'store']); // methode post pour créer une visite
+    Route::get('/show/{uuid}', [EVisiteurController::class, 'show']); // methode get pour obtenir les détails d'une visite
 });
 
 

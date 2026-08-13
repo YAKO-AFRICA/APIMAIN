@@ -573,25 +573,18 @@
                     <td><code>statut=actif</code></td>
                 </tr>
                 <tr>
-                    <td><code>sort_by</code></td>
-                    <td>string</td>
-                    <td>Champ de tri</td>
-                    <td><span class="badge badge-optional">Optionnel</span></td>
-                    <td><code>sort_by=nom</code></td>
-                </tr>
-                <tr>
-                    <td><code>sort_direction</code></td>
-                    <td>string</td>
-                    <td>Direction du tri (<code>asc</code> ou <code>desc</code>)</td>
-                    <td><span class="badge badge-optional">Optionnel</span></td>
-                    <td><code>sort_direction=asc</code></td>
-                </tr>
-                <tr>
                     <td><code>per_page</code></td>
                     <td>integer</td>
                     <td>Nombre d'éléments par page</td>
                     <td><span class="badge badge-optional">Optionnel</span></td>
                     <td><code>per_page=15</code></td>
+                </tr>
+                <tr>
+                    <td><code>code_agence</code></td>
+                    <td>string</td>
+                    <td>Code de l'agence</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>code_agence=assfin001</code></td>
                 </tr>
                 <tr>
                     <td><code>page</code></td>
@@ -623,7 +616,7 @@
             <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
             <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
             <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
-            <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+            <span class="key">"code_agence"</span>: <span class="string">"Abidjan"</span>,
             <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
             <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
             <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
@@ -693,7 +686,7 @@
         <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
         <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
         <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
-        <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+        <span class="key">"code_agence"</span>: <span class="string">"Abidjan"</span>,
         <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
         <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
         <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
@@ -789,7 +782,7 @@
                     <td><code>"CNI123456"</code></td>
                 </tr>
                 <tr>
-                    <td><code>agence</code></td>
+                    <td><code>code_agence</code></td>
                     <td>string</td>
                     <td>Agence concernée</td>
                     <td><span class="badge badge-optional">Optionnel</span></td>
@@ -820,7 +813,7 @@
     <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
     <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
     <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
-    <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+    <span class="key">"code_agence"</span>: <span class="string">"Abidjan"</span>,
     <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>
 }'</pre>
         </div>
@@ -843,7 +836,7 @@
         <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
         <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
         <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
-        <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+        <span class="key">"code_agence"</span>: <span class="string">"Abidjan"</span>,
         <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
         <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
         <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
@@ -1199,7 +1192,7 @@
     <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
     <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
     <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
-    <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+    <span class="key">"code_agence"</span>: <span class="string">"Abidjan"</span>,
     <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>
 }'</pre>
     </div>

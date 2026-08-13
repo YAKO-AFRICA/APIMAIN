@@ -30,6 +30,9 @@ class EVisiteurController extends Controller
             if ($request->filled('code')) {
                 $query->where('code', $request->code);
             }
+            if ($request->filled('code_agence')) {
+                $query->where('code_agence', $request->code_agence);
+            }
 
             // Filtre par motif_uuid
             if ($request->filled('motif_uuid')) {
@@ -155,7 +158,7 @@ class EVisiteurController extends Controller
                 'date_de_visite' => $request->input('date_de_visite'),
                 'nature_piece' => $request->input('nature_piece'),
                 'num_piece' => $request->input('num_piece'),
-                'agence' => $request->input('agence'),
+                'code_agence' => $request->input('code_agence'),
                 'notes' => $request->input('notes'),
             ]);
             

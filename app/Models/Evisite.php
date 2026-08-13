@@ -12,6 +12,6 @@ class Evisite extends Model
     protected $table = 'evisites';
 
     protected $fillable = [
-        'uuid', 'code', 'nom', 'prenoms', 'mobile', 'email', 'motif_uuid', 'personne_visite', 'date_de_visite', 'nature_piece', 'num_piece', 'notes', 'agence'
+        'uuid', 'code', 'nom', 'prenoms', 'mobile', 'email', 'motif_uuid', 'personne_visite', 'date_de_visite', 'nature_piece', 'num_piece', 'notes', 'code_agence'
     ];
 }

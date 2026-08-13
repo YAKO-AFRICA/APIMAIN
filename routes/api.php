@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CaisseEtatController;
 use App\Http\Controllers\Api\CaisseMouvementController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\JekoPaymentController;
+use App\Http\Controllers\Api\MotifController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportCaisseController;
@@ -265,6 +266,14 @@ Route::prefix('visite')->group(function () {
     Route::get('/get', [EVisiteurController::class, 'index']); // methode get pour obtenir les visites
     Route::post('/store', [EVisiteurController::class, 'store']); // methode post pour créer une visite
     Route::get('/show/{uuid}', [EVisiteurController::class, 'show']); // methode get pour obtenir les détails d'une visite
+});
+
+// Groupe de route motif traitement
+
+Route::prefix('motif')->group(function () {
+    Route::get('/get', [MotifController::class, 'index']); // methode get pour obtenir les motifs
+    Route::get('/show/{uuid}', [MotifController::class, 'show']); // methode get pour obtenir les détails d'un motif
+    Route::post('/store', [MotifController::class, 'store']); // methode post pour créer un motif
 });
 
 

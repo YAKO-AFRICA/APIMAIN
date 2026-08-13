@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Documentation - Gestion des Visiteurs</title>
+    <title>API Documentation - Gestion des Visiteurs & Motifs</title>
     <style>
         * {
             margin: 0;
@@ -80,12 +80,41 @@
             color: #24292e;
         }
 
+        .section-title {
+            background: #f1f8ff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-top: 40px;
+            margin-bottom: 25px;
+            border-left: 4px solid #0366d6;
+        }
+
+        .section-title h2 {
+            margin: 0;
+            border: none;
+            padding: 0;
+            font-size: 1.6rem;
+        }
+
+        .section-title p {
+            color: #586069;
+            margin-top: 5px;
+        }
+
         .endpoint {
             background: #f6f8fa;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 30px;
             border-left: 4px solid #0366d6;
+        }
+
+        .endpoint-visiteur {
+            border-left-color: #2b6cb0;
+        }
+
+        .endpoint-motif {
+            border-left-color: #d19b00;
         }
 
         .endpoint-header {
@@ -230,6 +259,16 @@
             color: #586069;
         }
 
+        .badge-visiteur {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-motif {
+            background: #fff3cd;
+            color: #856404;
+        }
+
         .error-codes {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -254,47 +293,6 @@
             color: #586069;
             font-size: 0.9rem;
             margin-top: 4px;
-        }
-
-        .example-section {
-            margin: 20px 0;
-        }
-
-        .example-tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 0;
-            border-bottom: 2px solid #e1e4e8;
-        }
-
-        .example-tab {
-            padding: 8px 16px;
-            background: #f1f3f5;
-            border: 1px solid #e1e4e8;
-            border-bottom: none;
-            border-radius: 4px 4px 0 0;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .example-tab.active {
-            background: white;
-            border-bottom: 2px solid #0366d6;
-            font-weight: 600;
-        }
-
-        .example-content {
-            display: none;
-            padding: 20px;
-            background: white;
-            border: 1px solid #e1e4e8;
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-        }
-
-        .example-content.active {
-            display: block;
         }
 
         .note {
@@ -327,6 +325,36 @@
             color: #0c5460;
         }
 
+        .note-warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .note-warning strong {
+            color: #856404;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 10px;
+        }
+
+        .tag-visiteur {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .tag-motif {
+            background: #fff3cd;
+            color: #856404;
+        }
+
         .footer {
             margin-top: 50px;
             padding-top: 20px;
@@ -334,6 +362,45 @@
             text-align: center;
             color: #586069;
             font-size: 0.9rem;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            padding: 20px 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #e1e4e8;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .toc-item {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e1e4e8;
+        }
+
+        .toc-item a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+
+        .toc-item a:hover {
+            text-decoration: underline;
+        }
+
+        .toc-item .tag {
+            margin-left: 8px;
         }
 
         @media (max-width: 768px) {
@@ -361,6 +428,10 @@
             .error-codes {
                 grid-template-columns: 1fr;
             }
+
+            .toc-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -368,7 +439,7 @@
 
 <div class="container">
     <h1>📋 API Documentation</h1>
-    <div class="subtitle">Gestion des Visiteurs - Version 1.0.0</div>
+    <div class="subtitle">Gestion des Visiteurs &amp; Motifs de Traitement - Version 1.0.0</div>
 
     <div class="base-url">
         <strong>Base URL :</strong> <span id="baseUrl">http://votre-domaine.com/api</span>
@@ -376,15 +447,65 @@
     </div>
 
     <!-- ============================================ -->
-    <!-- ENDPOINT 1 - GET /visite/get -->
+    <!-- SOMMAIRE -->
     <!-- ============================================ -->
 
-    <h2>Endpoints</h2>
+    <div class="toc">
+        <h3>📑 Sommaire</h3>
+        <div class="toc-grid">
+            <div class="toc-item">
+                <a href="#section-visiteurs">Visiteurs</a>
+                <span class="tag tag-visiteur">Visiteur</span>
+            </div>
+            <div class="toc-item" style="padding-left: 20px;">
+                <a href="#endpoint-visite-get">• GET /visite/get</a>
+            </div>
+            <div class="toc-item" style="padding-left: 20px;">
+                <a href="#endpoint-visite-show">• GET /visite/show/{uuid}</a>
+            </div>
+            <div class="toc-item" style="padding-left: 20px;">
+                <a href="#endpoint-visite-store">• POST /visite/store</a>
+            </div>
+            <div class="toc-item">
+                <a href="#section-motifs">Motifs</a>
+                <span class="tag tag-motif">Motif</span>
+            </div>
+            <div class="toc-item" style="padding-left: 20px;">
+                <a href="#endpoint-motif-get">• GET /motif/get</a>
+            </div>
+            <div class="toc-item" style="padding-left: 20px;">
+                <a href="#endpoint-motif-show">• GET /motif/show/{uuid}</a>
+            </div>
+            <div class="toc-item" style="padding-left: 20px;">
+                <a href="#endpoint-motif-store">• POST /motif/store</a>
+            </div>
+            <div class="toc-item">
+                <a href="#codes-erreur">Codes d'erreur</a>
+            </div>
+            <div class="toc-item">
+                <a href="#exemples">Exemples complets</a>
+            </div>
+            <div class="toc-item">
+                <a href="#notes">Notes importantes</a>
+            </div>
+        </div>
+    </div>
 
-    <div class="endpoint">
+    <!-- ============================================ -->
+    <!-- SECTION VISITEURS -->
+    <!-- ============================================ -->
+
+    <div class="section-title" id="section-visiteurs">
+        <h2>👤 Gestion des Visiteurs</h2>
+        <p>Endpoints pour la gestion des visiteurs</p>
+    </div>
+
+    <!-- ENDPOINT VISITE GET -->
+    <div class="endpoint endpoint-visiteur" id="endpoint-visite-get">
         <div class="endpoint-header">
             <span class="method method-get">GET</span>
             <span class="endpoint-url">/visite/get</span>
+            <span class="tag tag-visiteur">Visiteur</span>
         </div>
         <div class="description">
             Récupère la liste des visiteurs avec possibilité de filtrage, tri et pagination.
@@ -497,15 +618,15 @@
             <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
             <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
             <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
-            <span class="key">"motif_uuid"</span>: <span class="string">"motif-uuid-123"</span>,
+            <span class="key">"motif_uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
             <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
             <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
             <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
             <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
             <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
             <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
-            <span class="key">"created_at"</span>: <span class="string">"2026-08-15 09:30:00"</span>,
-            <span class="key">"updated_at"</span>: <span class="string">"2026-08-15 09:30:00"</span>
+            <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
+            <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
         }
     ],
     <span class="key">"pagination"</span>: {
@@ -518,27 +639,75 @@
     }
 }</pre>
         </div>
+    </div>
 
-        <h4>📤 Exemple de réponse (Succès - Sans pagination)</h4>
+    <!-- ENDPOINT VISITE SHOW -->
+    <div class="endpoint endpoint-visiteur" id="endpoint-visite-show">
+        <div class="endpoint-header">
+            <span class="method method-get">GET</span>
+            <span class="endpoint-url">/visite/show/{uuid}</span>
+            <span class="tag tag-visiteur">Visiteur</span>
+        </div>
+        <div class="description">
+            Récupère les détails d'un visiteur spécifique via son UUID.
+        </div>
+
+        <h4>📌 Paramètres d'URL</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Paramètre</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Requis</th>
+                    <th>Exemple</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>uuid</code></td>
+                    <td>string</td>
+                    <td>UUID unique du visiteur</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>550e8400-e29b-41d4-a716-446655440000</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>📤 Exemple de réponse (Succès)</h4>
         <div class="code-block">
             <span class="label">JSON</span>
             <pre>{
     <span class="key">"success"</span>: <span class="boolean">true</span>,
-    <span class="key">"message"</span>: <span class="string">"Liste des visiteurs"</span>,
-    <span class="key">"data"</span>: [...],
-    <span class="key">"total"</span>: <span class="number">75</span>
+    <span class="key">"message"</span>: <span class="string">"Visiteur trouvé avec succès."</span>,
+    <span class="key">"data"</span>: {
+        <span class="key">"id"</span>: <span class="number">1</span>,
+        <span class="key">"uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+        <span class="key">"code"</span>: <span class="string">"VIS202608150001"</span>,
+        <span class="key">"nom"</span>: <span class="string">"Dupont"</span>,
+        <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
+        <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
+        <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
+        <span class="key">"motif_uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+        <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
+        <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
+        <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
+        <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
+        <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
+        <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
+        <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
+        <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
+    }
 }</pre>
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- ENDPOINT 2 - POST /visite/store -->
-    <!-- ============================================ -->
-
-    <div class="endpoint">
+    <!-- ENDPOINT VISITE STORE -->
+    <div class="endpoint endpoint-visiteur" id="endpoint-visite-store">
         <div class="endpoint-header">
             <span class="method method-post">POST</span>
             <span class="endpoint-url">/visite/store</span>
+            <span class="tag tag-visiteur">Visiteur</span>
         </div>
         <div class="description">
             Crée un nouveau visiteur.
@@ -684,16 +853,116 @@
     </div>
 
     <!-- ============================================ -->
-    <!-- ENDPOINT 3 - GET /visite/show/{uuid} -->
+    <!-- SECTION MOTIFS -->
     <!-- ============================================ -->
 
-    <div class="endpoint">
+    <div class="section-title" id="section-motifs">
+        <h2>🏷️ Gestion des Motifs</h2>
+        <p>Endpoints pour la gestion des motifs de traitement</p>
+    </div>
+
+    <!-- ENDPOINT MOTIF GET -->
+    <div class="endpoint endpoint-motif" id="endpoint-motif-get">
         <div class="endpoint-header">
             <span class="method method-get">GET</span>
-            <span class="endpoint-url">/visite/show/{uuid}</span>
+            <span class="endpoint-url">/motif/get</span>
+            <span class="tag tag-motif">Motif</span>
         </div>
         <div class="description">
-            Récupère les détails d'un visiteur spécifique via son UUID.
+            Récupère la liste des motifs de traitement avec possibilité de filtrage et pagination.
+        </div>
+
+        <h4>📌 Paramètres de requête</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Paramètre</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Requis</th>
+                    <th>Exemple</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>systeme_used</code></td>
+                    <td>string</td>
+                    <td>Filtre par système utilisé</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>systeme_used=INTOUCH</code></td>
+                </tr>
+                <tr>
+                    <td><code>code</code></td>
+                    <td>string</td>
+                    <td>Filtre par code du motif</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>code=MT202608150001</code></td>
+                </tr>
+                <tr>
+                    <td><code>etat</code></td>
+                    <td>string</td>
+                    <td>Filtre par état (<code>actif</code> ou <code>inactif</code>)</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>etat=actif</code></td>
+                </tr>
+                <tr>
+                    <td><code>page</code></td>
+                    <td>integer</td>
+                    <td>Numéro de la page</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>page=2</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note note-info">
+            <strong>ℹ️ Note :</strong> La pagination est définie à <strong>15 éléments par page</strong> par défaut.
+        </div>
+
+        <h4>📤 Exemple de réponse (Succès)</h4>
+        <div class="code-block">
+            <span class="label">JSON</span>
+            <pre>{
+    <span class="key">"success"</span>: <span class="boolean">true</span>,
+    <span class="key">"message"</span>: <span class="string">"Liste des motifs"</span>,
+    <span class="key">"total"</span>: <span class="number">25</span>,
+    <span class="key">"data"</span>: [
+        {
+            <span class="key">"id"</span>: <span class="number">1</span>,
+            <span class="key">"uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+            <span class="key">"code"</span>: <span class="string">"MT202608150001"</span>,
+            <span class="key">"libelle"</span>: <span class="string">"Paiement facture"</span>,
+            <span class="key">"systeme_used"</span>: <span class="string">"INTOUCH"</span>,
+            <span class="key">"description"</span>: <span class="string">"Paiement des factures clients"</span>,
+            <span class="key">"etat"</span>: <span class="string">"actif"</span>,
+            <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
+            <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
+        },
+        {
+            <span class="key">"id"</span>: <span class="number">2</span>,
+            <span class="key">"uuid"</span>: <span class="string">"660e8400-e29b-41d4-a716-446655440001"</span>,
+            <span class="key">"code"</span>: <span class="string">"MT202608150002"</span>,
+            <span class="key">"libelle"</span>: <span class="string">"Réclamation client"</span>,
+            <span class="key">"systeme_used"</span>: <span class="string">"CRM"</span>,
+            <span class="key">"description"</span>: <span class="string">"Traitement des réclamations clients"</span>,
+            <span class="key">"etat"</span>: <span class="string">"actif"</span>,
+            <span class="key">"created_at"</span>: <span class="string">"2026-08-16T10:30:00.000000Z"</span>,
+            <span class="key">"updated_at"</span>: <span class="string">"2026-08-16T10:30:00.000000Z"</span>
+        }
+    ]
+}</pre>
+        </div>
+    </div>
+
+    <!-- ENDPOINT MOTIF SHOW -->
+    <div class="endpoint endpoint-motif" id="endpoint-motif-show">
+        <div class="endpoint-header">
+            <span class="method method-get">GET</span>
+            <span class="endpoint-url">/motif/show/{uuid}</span>
+            <span class="tag tag-motif">Motif</span>
+        </div>
+        <div class="description">
+            Récupère les détails d'un motif spécifique via son UUID.
         </div>
 
         <h4>📌 Paramètres d'URL</h4>
@@ -711,18 +980,104 @@
                 <tr>
                     <td><code>uuid</code></td>
                     <td>string</td>
-                    <td>UUID unique du visiteur</td>
+                    <td>UUID unique du motif</td>
                     <td><span class="badge badge-required">Requis</span></td>
                     <td><code>550e8400-e29b-41d4-a716-446655440000</code></td>
                 </tr>
             </tbody>
         </table>
 
+        <h4>📤 Exemple de réponse (Succès)</h4>
+        <div class="code-block">
+            <span class="label">JSON</span>
+            <pre>{
+    <span class="key">"success"</span>: <span class="boolean">true</span>,
+    <span class="key">"message"</span>: <span class="string">"Motif trouvé"</span>,
+    <span class="key">"data"</span>: {
+        <span class="key">"id"</span>: <span class="number">1</span>,
+        <span class="key">"uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+        <span class="key">"code"</span>: <span class="string">"MT202608150001"</span>,
+        <span class="key">"libelle"</span>: <span class="string">"Paiement facture"</span>,
+        <span class="key">"systeme_used"</span>: <span class="string">"INTOUCH"</span>,
+        <span class="key">"description"</span>: <span class="string">"Paiement des factures clients"</span>,
+        <span class="key">"etat"</span>: <span class="string">"actif"</span>,
+        <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
+        <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
+    }
+}</pre>
+        </div>
+
+        <h4>📤 Exemple de réponse (Échec - Motif non trouvé)</h4>
+        <div class="code-block">
+            <span class="label">JSON</span>
+            <pre>{
+    <span class="key">"success"</span>: <span class="boolean">false</span>,
+    <span class="key">"message"</span>: <span class="string">"Motif introuvable"</span>
+}</pre>
+        </div>
+    </div>
+
+    <!-- ENDPOINT MOTIF STORE -->
+    <div class="endpoint endpoint-motif" id="endpoint-motif-store">
+        <div class="endpoint-header">
+            <span class="method method-post">POST</span>
+            <span class="endpoint-url">/motif/store</span>
+            <span class="tag tag-motif">Motif</span>
+        </div>
+        <div class="description">
+            Crée un nouveau motif de traitement.
+        </div>
+
+        <h4>📥 Corps de la requête</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Champ</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Requis</th>
+                    <th>Exemple</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>libelle</code></td>
+                    <td>string</td>
+                    <td>Libellé du motif</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>"Paiement facture"</code></td>
+                </tr>
+                <tr>
+                    <td><code>systeme_used</code></td>
+                    <td>string</td>
+                    <td>Système utilisé pour le traitement</td>
+                    <td><span class="badge badge-required">Requis</span></td>
+                    <td><code>"INTOUCH"</code></td>
+                </tr>
+                <tr>
+                    <td><code>description</code></td>
+                    <td>string</td>
+                    <td>Description détaillée du motif</td>
+                    <td><span class="badge badge-optional">Optionnel</span></td>
+                    <td><code>"Paiement des factures clients"</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note note-info">
+            <strong>ℹ️ Note :</strong> Le champ <code>etat</code> est automatiquement défini à <strong>"actif"</strong> lors de la création.
+        </div>
+
         <h4>📤 Exemple de requête</h4>
         <div class="code-block">
             <span class="label">cURL</span>
-            <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/visite/show/550e8400-e29b-41d4-a716-446655440000"</span> \
--H <span class="string">"Content-Type: application/json"</span></pre>
+            <pre>curl -X POST <span class="string">"http://votre-domaine.com/api/motif/store"</span> \
+-H <span class="string">"Content-Type: application/json"</span> \
+-d '{
+    <span class="key">"libelle"</span>: <span class="string">"Paiement facture"</span>,
+    <span class="key">"systeme_used"</span>: <span class="string">"INTOUCH"</span>,
+    <span class="key">"description"</span>: <span class="string">"Paiement des factures clients"</span>
+}'</pre>
         </div>
 
         <h4>📤 Exemple de réponse (Succès)</h4>
@@ -730,22 +1085,14 @@
             <span class="label">JSON</span>
             <pre>{
     <span class="key">"success"</span>: <span class="boolean">true</span>,
-    <span class="key">"message"</span>: <span class="string">"Visiteur trouvé avec succès."</span>,
+    <span class="key">"message"</span>: <span class="string">"Motif cree avec success."</span>,
     <span class="key">"data"</span>: {
-        <span class="key">"id"</span>: <span class="number">1</span>,
         <span class="key">"uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
-        <span class="key">"code"</span>: <span class="string">"VIS202608150001"</span>,
-        <span class="key">"nom"</span>: <span class="string">"Dupont"</span>,
-        <span class="key">"prenoms"</span>: <span class="string">"Jean"</span>,
-        <span class="key">"mobile"</span>: <span class="string">"0102030405"</span>,
-        <span class="key">"email"</span>: <span class="string">"jean.dupont@email.com"</span>,
-        <span class="key">"motif_uuid"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
-        <span class="key">"personne_visite"</span>: <span class="string">"M. Martin"</span>,
-        <span class="key">"date_de_visite"</span>: <span class="string">"2026-08-15 10:00:00"</span>,
-        <span class="key">"nature_piece"</span>: <span class="string">"CNI"</span>,
-        <span class="key">"num_piece"</span>: <span class="string">"CNI123456"</span>,
-        <span class="key">"agence"</span>: <span class="string">"Abidjan"</span>,
-        <span class="key">"notes"</span>: <span class="string">"Visite importante"</span>,
+        <span class="key">"code"</span>: <span class="string">"MT202608150001"</span>,
+        <span class="key">"libelle"</span>: <span class="string">"Paiement facture"</span>,
+        <span class="key">"systeme_used"</span>: <span class="string">"INTOUCH"</span>,
+        <span class="key">"description"</span>: <span class="string">"Paiement des factures clients"</span>,
+        <span class="key">"etat"</span>: <span class="string">"actif"</span>,
         <span class="key">"created_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>,
         <span class="key">"updated_at"</span>: <span class="string">"2026-08-15T09:30:00.000000Z"</span>
     }
@@ -757,24 +1104,28 @@
     <!-- CODES D'ERREUR -->
     <!-- ============================================ -->
 
-    <h2>Codes d'erreur</h2>
+    <h2 id="codes-erreur">Codes d'erreur</h2>
 
     <div class="error-codes">
+        <div class="error-card">
+            <div class="code">200</div>
+            <div class="desc">Succès de l'opération</div>
+        </div>
         <div class="error-card">
             <div class="code">400</div>
             <div class="desc">Requête invalide - Format UUID incorrect</div>
         </div>
         <div class="error-card">
             <div class="code">404</div>
-            <div class="desc">Ressource non trouvée</div>
+            <div class="desc">Ressource non trouvée (Visiteur ou Motif introuvable)</div>
         </div>
         <div class="error-card">
             <div class="code">500</div>
-            <div class="desc">Erreur interne du serveur</div>
+            <div class="desc">Erreur interne du serveur (Erreur SQL, contrainte d'intégrité, etc.)</div>
         </div>
     </div>
 
-    <h4>Exemple d'erreur</h4>
+    <h4>Exemples d'erreur</h4>
     <div class="code-block">
         <span class="label">JSON</span>
         <pre>{
@@ -791,11 +1142,21 @@
 }</pre>
     </div>
 
+    <div class="code-block">
+        <span class="label">JSON</span>
+        <pre>{
+    <span class="key">"success"</span>: <span class="boolean">false</span>,
+    <span class="key">"message"</span>: <span class="string">"Motif introuvable"</span>
+}</pre>
+    </div>
+
     <!-- ============================================ -->
     <!-- EXEMPLES COMPLETS -->
     <!-- ============================================ -->
 
-    <h2>Exemples complets</h2>
+    <h2 id="exemples">Exemples complets</h2>
+
+    <h3>👤 Visiteurs</h3>
 
     <div class="note note-success">
         <strong>✅ Exemple 1 :</strong> Récupérer tous les visiteurs avec pagination
@@ -851,27 +1212,95 @@
         <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/visite/show/550e8400-e29b-41d4-a716-446655440000"</span></pre>
     </div>
 
+    <h3>🏷️ Motifs</h3>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 6 :</strong> Récupérer tous les motifs actifs
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/motif/get?etat=actif"</span></pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 7 :</strong> Filtrer les motifs par système utilisé
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/motif/get?systeme_used=INTOUCH"</span></pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 8 :</strong> Créer un nouveau motif
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X POST <span class="string">"http://votre-domaine.com/api/motif/store"</span> \
+-H <span class="string">"Content-Type: application/json"</span> \
+-d '{
+    <span class="key">"libelle"</span>: <span class="string">"Réclamation client"</span>,
+    <span class="key">"systeme_used"</span>: <span class="string">"CRM"</span>,
+    <span class="key">"description"</span>: <span class="string">"Traitement des réclamations clients"</span>
+}'</pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 9 :</strong> Récupérer les détails d'un motif
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/motif/show/550e8400-e29b-41d4-a716-446655440000"</span></pre>
+    </div>
+
+    <div class="note note-success">
+        <strong>✅ Exemple 10 :</strong> Combinaison de filtres pour les motifs
+    </div>
+    <div class="code-block">
+        <span class="label">cURL</span>
+        <pre>curl -X GET <span class="string">"http://votre-domaine.com/api/motif/get?systeme_used=INTOUCH&etat=actif"</span></pre>
+    </div>
+
     <!-- ============================================ -->
-    <!-- NOTES -->
+    <!-- NOTES IMPORTANTES -->
     <!-- ============================================ -->
 
-    <h2>Notes importantes</h2>
+    <h2 id="notes">Notes importantes</h2>
 
     <div class="note note-info">
         <strong>ℹ️ Génération automatique :</strong>
         <ul style="margin-top: 8px; padding-left: 20px;">
-            <li>Le champ <code>uuid</code> est généré automatiquement via <code>Str::uuid()</code></li>
-            <li>Le champ <code>code</code> est généré automatiquement via la fonction <code>Refgenerate()</code></li>
+            <li><strong>Visiteurs :</strong> <code>uuid</code> généré via <code>Str::uuid()</code>, <code>code</code> généré via <code>Refgenerate()</code> avec préfixe <strong>"VIS"</strong></li>
+            <li><strong>Motifs :</strong> <code>uuid</code> généré via <code>Str::uuid()</code>, <code>code</code> généré via <code>Refgenerate()</code> avec préfixe <strong>"MT"</strong></li>
             <li>Les champs <code>created_at</code> et <code>updated_at</code> sont gérés automatiquement par Laravel</li>
+            <li>Le champ <code>etat</code> des motifs est automatiquement défini à <strong>"actif"</strong> lors de la création</li>
         </ul>
     </div>
 
     <div class="note note-info">
         <strong>ℹ️ Transactions :</strong>
         <ul style="margin-top: 8px; padding-left: 20px;">
-            <li>La création d'un visiteur est effectuée dans une transaction SQL</li>
+            <li>La création d'un visiteur ou d'un motif est effectuée dans une transaction SQL</li>
             <li>En cas d'erreur, toutes les modifications sont annulées (rollback)</li>
-            <li>Les erreurs sont automatiquement journalisées dans les logs Laravel</li>
+            <li>Les erreurs SQL (contraintes d'intégrité, clés uniques, etc.) sont capturées et retournées</li>
+        </ul>
+    </div>
+
+    <div class="note note-info">
+        <strong>ℹ️ Pagination :</strong>
+        <ul style="margin-top: 8px; padding-left: 20px;">
+            <li><strong>Visiteurs :</strong> Pagination paramétrable via <code>per_page</code> (défaut: 15)</li>
+            <li><strong>Motifs :</strong> Pagination fixée à <strong>15 éléments par page</strong></li>
+            <li>Utilisez le paramètre <code>page</code> pour naviguer entre les pages</li>
+        </ul>
+    </div>
+
+    <div class="note note-warning">
+        <strong>⚠️ Contraintes :</strong>
+        <ul style="margin-top: 8px; padding-left: 20px;">
+            <li><strong>Visiteurs :</strong> <code>uuid</code> et <code>code</code> sont uniques</li>
+            <li><strong>Motifs :</strong> <code>uuid</code> et <code>code</code> sont uniques</li>
+            <li><strong>Motifs :</strong> Les états possibles sont : <strong>"actif"</strong> ou <strong>"inactif"</strong></li>
+            <li>Tous les champs requis doivent être fournis pour la création</li>
         </ul>
     </div>
 
@@ -909,27 +1338,17 @@
                 btn.textContent = originalText;
                 btn.style.background = '#0366d6';
             }, 2000);
+        }).catch(() => {
+            // Fallback pour les navigateurs qui ne supportent pas clipboard
+            const input = document.createElement('input');
+            input.value = url;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            alert('URL copiée dans le presse-papier !');
         });
     }
-
-    // Gestion des onglets d'exemples (si vous en ajoutez)
-    document.addEventListener('DOMContentLoaded', function() {
-        const tabs = document.querySelectorAll('.example-tab');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const parent = this.closest('.example-section');
-                const contentId = this.dataset.target;
-                
-                // Désactiver tous les onglets et contenus
-                parent.querySelectorAll('.example-tab').forEach(t => t.classList.remove('active'));
-                parent.querySelectorAll('.example-content').forEach(c => c.classList.remove('active'));
-                
-                // Activer l'onglet cliqué et son contenu
-                this.classList.add('active');
-                document.getElementById(contentId).classList.add('active');
-            });
-        });
-    });
 </script>
 
 </body>

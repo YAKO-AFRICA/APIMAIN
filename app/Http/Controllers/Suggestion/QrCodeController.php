@@ -122,7 +122,7 @@ class QrCodeController extends Controller
             if($qrCodeAgenceExiste){
                 return response()->json([
                     'success' => false,
-                    'message' => 'un qr code pour cette agence existe deja avec le code ',
+                    'message' => 'un Qr code pour cette agence existe deja avec le code ',
                     'data' => $qrCodeAgenceExiste
                 ], 400);
             }
@@ -130,12 +130,12 @@ class QrCodeController extends Controller
             $code = Refgenerate(QrCode::class, 'QRCODE', 'code');
             $uuid = Str::uuid();
             Log::info('Generated QR code: ' . $code);
-            $link = 'https://assfin.yakoafricassur.com/qr/' . $uuid;
+            // $link = 'https://assfin.yakoafricassur.com/qr/' . $uuid;
             $qrCode = QrCode::create([
                 'uuid' => $uuid,
                 'code' => $code,
                 'agency_code' => $agenceCode,
-                'link' => $link,
+                // 'link' => $link,
             ]);
 
             DB::commit();
@@ -144,7 +144,7 @@ class QrCodeController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'QR code generé avec success.',
-                    'link' => $link,
+                    // 'link' => $link,
                     'data' => $qrCode,
                 ], 201);
             } else {

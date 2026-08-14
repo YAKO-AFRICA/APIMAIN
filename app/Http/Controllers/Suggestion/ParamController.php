@@ -19,7 +19,7 @@ class ParamController extends Controller
         if($respZoneExite){
             return response()->json([
                 'success' => false,
-                'message' => 'un responsable existe deja dans cette zone',
+                'message' => 'Le superviseur a deja une zone',
                 'data' => $respZoneExite
             ], 400);
         }

@@ -118,6 +118,15 @@ class QrCodeController extends Controller
 
             $agenceCode = $request->input('agency_code');
 
+            $qrCodeAgenceExiste = QrCode::where('agency_code', $agenceCode)->first();
+            if($qrCodeAgenceExiste){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'un qr code pour cette agence existe deja avec le code ',
+                    'data' => $qrCodeAgenceExiste
+                ], 400);
+            }
+
             $code = Refgenerate(QrCode::class, 'QRCODE', 'code');
             $uuid = Str::uuid();
             Log::info('Generated QR code: ' . $code);

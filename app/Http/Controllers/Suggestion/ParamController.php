@@ -15,6 +15,15 @@ class ParamController extends Controller
         // 3. Créer un code de zone
         $code = Refgenerate(ZoneByUser::class, 'ZONE', 'code');
 
+        $respZoneExite = ZoneByUser::where('responsable_uuid', $request->responsable_uuid)->first();
+        if($respZoneExite){
+            return response()->json([
+                'success' => false,
+                'message' => 'un responsable existe deja dans cette zone',
+                'data' => $respZoneExite
+            ], 400);
+        }
+
         // 4. Créer la nouvelle zone
         $zoneByUser = ZoneByUser::create([
             'uuid' => Str::uuid(),

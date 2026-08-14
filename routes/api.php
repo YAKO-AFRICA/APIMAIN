@@ -259,6 +259,7 @@ Route::prefix('suggestion')->group(function () {
 
     // state des suggestion tableau de ord 
     Route::get('/state', [StateController::class, 'State']); // methode get pour obtenir l'état des suggestions
+    Route::get('/getCategoryStatistics', [StateController::class, 'getCategoryStatistics']); // methode get pour obtenir l'état des suggestions par categorie
 
 });
 

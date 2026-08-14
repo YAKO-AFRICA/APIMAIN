@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Suggestion;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\ESuggestion;
 use App\Models\QrCode;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StateController extends Controller
 {
@@ -85,6 +87,65 @@ class StateController extends Controller
 
 
 
+
         return $query->get();
+    }
+
+    public function getCategoryStatistics(Request $request)
+    {
+        $query = ESuggestion::query();
+
+        
+
+        // Get category statistics
+        $categoryStats = $query
+            ->select(
+                'uuid_category',
+                DB::raw('COUNT(*) as frequency'),
+                DB::raw('AVG(note) as average_note'),
+                DB::raw('COUNT(CASE WHEN note <= 2 THEN 1 END) as negative_count'),
+                DB::raw('COUNT(CASE WHEN note >= 4 THEN 1 END) as positive_count')
+            )
+            ->groupBy('uuid_category')
+            ->orderBy('frequency', 'DESC')
+            ->get();
+
+            
+
+        // If you want to join with category table to get category names
+        // Assuming you have a Category model
+        $categoryNames = Category::whereIn('uuid', $categoryStats->pluck('uuid_category'))
+            ->pluck('libelle', 'uuid');
+
+        
+
+        // Format the response
+        $formattedStats = $categoryStats->map(function ($item) use ($categoryNames) {
+            $total = $item->frequency;
+            return [
+                'uuid_category' => $item->uuid_category,
+                'category_name' => $categoryNames[$item->uuid_category] ?? 'Unknown',
+                'frequency' => $total,
+                'percentage' => 0, // Will be calculated after total is known
+                'average_note' => round($item->average_note, 2),
+                'negative_count' => $item->negative_count,
+                'positive_count' => $item->positive_count,
+                'negative_rate' => $total > 0 ? round(($item->negative_count / $total) * 100, 2) : 0,
+                'positive_rate' => $total > 0 ? round(($item->positive_count / $total) * 100, 2) : 0,
+            ];
+        });
+
+        // Calculate total and percentages
+        $totalSuggestions = $formattedStats->sum('frequency');
+        $formattedStats = $formattedStats->map(function ($item) use ($totalSuggestions) {
+            $item['percentage'] = $totalSuggestions > 0 ? round(($item['frequency'] / $totalSuggestions) * 100, 2) : 0;
+            return $item;
+        });
+
+        return response()->json([
+            'categories' => $formattedStats,
+            'total_suggestions' => $totalSuggestions,
+            'total_categories' => $formattedStats->count(),
+        ]);
     }
 }

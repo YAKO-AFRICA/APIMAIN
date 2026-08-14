@@ -1452,21 +1452,145 @@
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="state-200">
                             <pre>[
-    {
-        "note_moyenne": 4.2,
-        "satisfaction_moyenne": 0.75,
-        "nombre_total_suggestions": 120,
-        "nombre_total_qr_code_scan": 450,
-        "taux_participation": 26.67,
-        "nombre_suggestions_negatives": 18,
-        "taux_traitement": 65.00
-    }
-]</pre>
+                                {
+                                    "note_moyenne": 4.2,
+                                    "satisfaction_moyenne": 0.75,
+                                    "nombre_total_suggestions": 120,
+                                    "nombre_total_qr_code_scan": 450,
+                                    "taux_participation": 26.67,
+                                    "nombre_suggestions_negatives": 18,
+                                    "taux_traitement": 65.00
+                                }
+                            ]</pre>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- ============================================ -->
+<!-- SECTION : STATISTIQUES PAR CATÉGORIE        -->
+<!-- ============================================ -->
+<div class="section-card" style="border-left-color: #fd7e14;">
+    <div class="section-title">
+        <i class="fas fa-chart-bar" style="color: #fd7e14;"></i> Statistiques par Catégorie
+        <span class="badge bg-warning text-dark rounded-pill ms-2">1 endpoint</span>
+    </div>
+
+    <div class="endpoint" id="category-stats" style="border-color: #fd7e14; background: #fff8f0;">
+        <div>
+            <span class="method get">GET</span>
+            <span class="path">/suggestion/getCategoryStatistics</span>
+            <span class="badge-new"><i class="fas fa-star"></i> NOUVEAU</span>
+        </div>
+        <div class="description">
+            <strong>Statistiques des suggestions par catégorie</strong> — Récupère les indicateurs clés par catégorie : fréquence, note moyenne, taux de satisfaction et d'insatisfaction.
+        </div>
+
+        <div class="mt-2">
+            <strong class="text-secondary">Paramètres (Query) :</strong>
+            <table class="table table-sm table-bordered params-table mt-1">
+                <thead><tr><th>Champ</th><th>Type</th><th>Obligatoire</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>statut</code></td><td>string</td><td>❌ Non</td><td>Filtrer par statut (new, in_progress, traited, closed)</td></tr>
+                    <tr><td><code>etat</code></td><td>string</td><td>❌ Non</td><td>Filtrer par état (actif/inactif)</td></tr>
+                    <tr><td><code>date_debut</code></td><td>date</td><td>❌ Non</td><td>Date de début (YYYY-MM-DD)</td></tr>
+                    <tr><td><code>date_fin</code></td><td>date</td><td>❌ Non</td><td>Date de fin (YYYY-MM-DD)</td></tr>
+                    <tr><td><code>agency_code</code></td><td>string</td><td>❌ Non</td><td>Code agence (filtre via QR code)</td></tr>
+                    <tr><td><code>uuid_category</code></td><td>string</td><td>❌ Non</td><td>Filtrer par catégorie spécifique</td></tr>
+                    <tr><td><code>note</code></td><td>integer</td><td>❌ Non</td><td>Filtrer par note (≤ valeur)</td></tr>
+                </tbody>
+            </table>
+            <small class="text-muted">Tous les filtres disponibles sur <code>/suggestion/get</code> sont également applicables.</small>
+        </div>
+
+        <div class="example-box">
+            <span class="label">// Exemple de requête</span><br>
+            <span class="key">GET</span> /api/suggestion/getCategoryStatistics?agency_code=AG-001&amp;date_debut=2026-01-01&amp;date_fin=2026-01-31
+        </div>
+
+        <div class="response-box">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#cat-stats-200">✅ 200</a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="cat-stats-200">
+                    <pre>{
+    "categories": [
+        {
+            "uuid_category": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "category_name": "Qualité de service",
+            "frequency": 45,
+            "percentage": 37.50,
+            "average_note": 4.20,
+            "negative_count": 3,
+            "positive_count": 32,
+            "negative_rate": 6.67,
+            "positive_rate": 71.11
+        },
+        {
+            "uuid_category": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+            "category_name": "Propreté",
+            "frequency": 30,
+            "percentage": 25.00,
+            "average_note": 3.80,
+            "negative_count": 5,
+            "positive_count": 18,
+            "negative_rate": 16.67,
+            "positive_rate": 60.00
+        },
+        {
+            "uuid_category": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+            "category_name": "Accueil",
+            "frequency": 25,
+            "percentage": 20.83,
+            "average_note": 4.50,
+            "negative_count": 1,
+            "positive_count": 20,
+            "negative_rate": 4.00,
+            "positive_rate": 80.00
+        },
+        {
+            "uuid_category": "d4e5f6a7-b8c9-0123-def4-567890123456",
+            "category_name": "Délai d'attente",
+            "frequency": 20,
+            "percentage": 16.67,
+            "average_note": 2.80,
+            "negative_count": 10,
+            "positive_count": 5,
+            "negative_rate": 50.00,
+            "positive_rate": 25.00
+        }
+    ],
+    "total_suggestions": 120,
+    "total_categories": 4
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <strong class="text-secondary">Indicateurs retournés :</strong>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><span class="badge bg-primary me-1">frequency</span> Nombre de suggestions dans la catégorie</li>
+                        <li><span class="badge bg-primary me-1">percentage</span> Pourcentage des suggestions totales</li>
+                        <li><span class="badge bg-success me-1">average_note</span> Note moyenne (1-5)</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><span class="badge bg-success me-1">positive_count</span> Nombre de notes ≥ 4</li>
+                        <li><span class="badge bg-danger me-1">negative_count</span> Nombre de notes ≤ 2</li>
+                        <li><span class="badge bg-success me-1">positive_rate</span> Taux de satisfaction (%)</li>
+                        <li><span class="badge bg-danger me-1">negative_rate</span> Taux d'insatisfaction (%)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
         <!-- ============================================ -->
         <!-- RECAPITULATIF DES ENDPOINTS                 -->
@@ -1518,6 +1642,10 @@
                 <span class="badge-new ms-2"><i class="fas fa-star"></i> NOUVEAU</span> — Nouvel endpoint ajouté
             </div>
         </div>
+
+
+
+
 
         <!-- ============================================ -->
         <!-- FOOTER                                      -->

@@ -95,6 +95,13 @@ class StateController extends Controller
     {
         $query = ESuggestion::query();
 
+
+        // filtre suggestion par agence lier au qrcode
+        if ($request->has('agency_code')) {
+            $qrCodePluckUuid = QrCode::where('agency_code', $request->agency_code)->pluck('uuid');
+            $query->whereIn('uuid_qrcode', $qrCodePluckUuid);
+        }
+
         
 
         // Get category statistics

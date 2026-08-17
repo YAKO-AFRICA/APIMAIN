@@ -376,12 +376,19 @@ class  JekoPaymentController extends Controller
             $paiement->payment_validation_date = Carbon::now()->format('Y-m-d H:i:s');
             $paiement->reponse_webhook = array_merge($paiement->reponse_webhook ?? [], ['webhook' => $payload, 'date_maj' => now()]);
             $paiement->save();
+
+            Log::info('Transaction mise à jour via webhook', [
+                'reference' => $reference,
+                'paiement' => $paiement
+            ]);
  
             // Propage le statut aux factures liées (même codePaiement)
             TblFacture::where('codePaiement', $paiement->command_number)->update([
                 'etat' => 2,
                 'codePaiement' => $payload['transactionDetails']['paymentLinkId']
             ]);
+            Log::info('Factures mise à jour via webhook');
+            
             $this->generateReceipt($paiement->codePaiement, $paiement->typeReglement);
  
             Log::info('Transaction mise à jour via webhook', [

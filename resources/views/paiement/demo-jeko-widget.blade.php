@@ -139,10 +139,6 @@
         },
       });
 
-      // function newReference(prefix) {
-      //   return prefix + '-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-      // }
-
       function newReference() {
         const code = Math.floor(Math.random() * 9999) + 1;
         const now = new Date();

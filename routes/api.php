@@ -160,6 +160,7 @@ Route::prefix('param')->group(function () {
 
 Route::prefix('paiement')->group(function () {
     Route::post('/save-paiement-om-callback', [PaiementController::class, 'savePaiementOM']);
+    Route::post('/save-paiement-wave-callback', [PaiementController::class, 'savePaiementWave']);
 });
 
 

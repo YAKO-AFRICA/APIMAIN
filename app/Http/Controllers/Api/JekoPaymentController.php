@@ -173,10 +173,6 @@ class  JekoPaymentController extends Controller
         });
  
         if ($validator->fails()) {
-            // Log::warning('Validation du paiement échouée', [
-            //     'errors' => $validator->errors(),
-            //     'input' => $request->except(['metadata']),
-            // ]);
  
             return response()->json([
                 'success' => false,
@@ -231,19 +227,8 @@ class  JekoPaymentController extends Controller
                 'metadata' => $donnees['metadata'] ?? null,
             ], $referenceInterne);
  
-            // Log::info('Initialisation paiement Jeko', [
-            //     'reference_interne' => $referenceInterne,
-            //     'paymentType' => $donnees['paymentType'],
-            //     'montant' => $preparation['montantTotal'],
-            //     'resultat' => $resultat,
-            // ]);
- 
             if (!$resultat['success']) {
-                // Log::warning('Échec initialisation paiement Jeko', [
-                //     'reference' => $donnees['reference'],
-                //     'reference_interne' => $referenceInterne,
-                //     'erreur' => $resultat['message'] ?? 'Erreur inconnue',
-                // ]);
+            
  
                 return response()->json([
                     'success' => false,

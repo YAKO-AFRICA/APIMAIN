@@ -106,7 +106,7 @@ class JekoPaymentService
             'X-API-KEY-ID' => $this->apiKeyId,
         ])
             ->timeout(10)
-            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->codePaiement);
+            ->get($this->baseUrl . '/partner_api/payment_links/' . $paiement->codePaiement);
 
         if (!$response->successful()) {
             return [
@@ -129,10 +129,6 @@ class JekoPaymentService
 
     public function validerWebhook(Request $request): bool
     {
-        // Log tous les headers pour déboguer
-        // Log::info('Tous les headers reçus', [
-        //     'headers' => $request->headers->all()
-        // ]);
 
         // Essayer plusieurs noms de headers possibles
         $signature = $request->header('jeko-signature');

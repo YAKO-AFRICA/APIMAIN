@@ -1,4 +1,3 @@
-<!-- recu_preview.blade.php -->
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -7,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reçu de paiement — {{ $paiement->codePaiement ?? '' }}</title>
     <style>
-        /* Tous vos styles existants (copiés) */
         * {
             margin: 0;
             padding: 0;
@@ -15,18 +13,19 @@
         }
 
         body {
-            font-family: 'DejaVu Sans', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             color: #111827;
             max-width: 680px;
             margin: 0 auto;
             padding: 20px;
-            background: #fafafa;
+            background: #f9fafb;
         }
 
         .receipt {
             background: #ffffff;
             border-radius: 16px;
             padding: 32px 36px 28px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
         }
 
         .header {
@@ -55,6 +54,13 @@
             color: #fff;
             font-weight: 800;
             font-size: 18px;
+            overflow: hidden;
+        }
+
+        .header-left .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .header h1 {
@@ -75,6 +81,36 @@
             text-transform: uppercase;
             letter-spacing: .05em;
             border: 1px solid #cde6db;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #d1fae5;
+            color: #065f46;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 4px 12px 4px 10px;
+            border-radius: 20px;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-badge::before {
+            content: "●";
+            font-size: 10px;
+            color: #059669;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .3;
+            }
         }
 
         .meta-grid {
@@ -108,11 +144,18 @@
             color: #111827;
         }
 
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 24px;
             font-size: 13.5px;
+            min-width: 500px;
         }
 
         thead th {
@@ -137,19 +180,6 @@
             border-bottom: none;
         }
 
-        .total-row td {
-            font-weight: 800;
-            font-size: 16px;
-            border-top: 2px solid #1D603D !important;
-            border-bottom: none !important;
-            padding-top: 16px;
-            padding-bottom: 4px;
-        }
-
-        .total-row td:last-child {
-            color: #1D603D;
-        }
-
         .payment-summary {
             background: linear-gradient(135deg, #f0f7f3, #e6f1eb);
             border-radius: 12px;
@@ -172,38 +202,6 @@
             font-weight: 800;
             color: #0B482F;
             letter-spacing: -.3px;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #d1fae5;
-            color: #065f46;
-            font-weight: 700;
-            font-size: 11px;
-            padding: 4px 12px 4px 10px;
-            border-radius: 20px;
-            border: 1px solid #a7f3d0;
-        }
-
-        .status-badge::before {
-            content: "●";
-            font-size: 10px;
-            color: #059669;
-            animation: pulse-dot 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse-dot {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: .3;
-            }
         }
 
         .actions {
@@ -259,7 +257,7 @@
             padding-top: 20px;
         }
 
-        /* Print / PDF styles */
+        /* Print styles */
         @media print {
             body {
                 background: #fff;
@@ -290,16 +288,6 @@
 
             thead th {
                 background: #f3f4f6;
-            }
-
-            .badge {
-                background: #f3f4f6;
-                border-color: #d1d5db;
-            }
-
-            .status-badge {
-                background: #d1fae5;
-                border-color: #a7f3d0;
             }
         }
 
@@ -334,24 +322,6 @@
                 width: 100%;
                 justify-content: center;
             }
-
-            .total-row td {
-                font-size: 14px;
-            }
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .payment-factures {
-            width: 100%;
-            min-width: 700px;
-            /* Ajuste selon le contenu */
-            border-collapse: collapse;
-            white-space: nowrap;
         }
     </style>
 </head>
@@ -361,11 +331,11 @@
         <div class="header">
             <div class="header-left">
                 <div class="logo">
-                    <img src="data:image/jpg;base64,{{ base64_encode(file_get_contents(public_path('assets/images/ynov-logo.jpg'))) }}" width="40" height="40" style="border-radius:25%;" alt="">
+                    <img src="{{ asset('assets/images/ynov-logo.jpg') }}" alt="Logo" onerror="this.style.display='none'; this.parentElement.textContent='Y'">
                 </div>
                 <div>
                     <h1>Reçu de paiement</h1>
-                    <span style="font-size:12px; color:#6b7280; font-weight:500;">N° {{ $paiement->command_number ?? '' }}</span>
+                    <span style="font-size:12px; color:#6b7280; font-weight:500;">N° {{ $paiement->codePaiement ?? '' }}</span>
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -408,7 +378,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table payment-factures">
+            <table>
                 <thead>
                     <tr>
                         <th style="width:35%;">Détail</th>
@@ -440,7 +410,7 @@
                             {{ number_format($facture->prime, 0, ',', ' ') }} F CFA
                         </td>
                         <td style="text-align:right; font-weight:600;">
-                            {{ $facture->libelleTypeFacture ?? '' }}
+                            {{ $facture->libelleTypeFacture ?? $facture->typeFacture }}
                         </td>
                     </tr>
                     @empty
@@ -459,7 +429,7 @@
             <span class="amount">{{ number_format($paiement->montant ?? 0, 0, ',', ' ') }} F CFA</span>
         </div>
 
-        @if(($paiement->typeReglement ?? '') === 'firstPayment' && isset($fraisAdhesion))
+        @if(($paiement->typeReglement ?? '') === 'firstPayment')
         <div style="font-size:12px; color:#6b7280; text-align:center; padding:8px 0 4px; border-top:1px solid #eef2f0;">
             <span>⚠️ Ce paiement comprend la première prime et les frais d'adhésion.</span>
         </div>
@@ -471,11 +441,12 @@
         </div>
         @endif
 
-        <!-- Bouton PDF -->
         <div class="actions">
+            @if($fileName)
             <a href="{{ url('storage/documents/' . $fileName) }}" download class="btn">
                 📥 Télécharger en PDF
             </a>
+            @endif
             <button onclick="window.print()">
                 🖨️ Imprimer
             </button>
@@ -486,6 +457,14 @@
             En cas de question, contactez notre service client.
         </div>
     </div>
+
+    <script>
+        // Fonction pour imprimer
+        document.querySelectorAll('[onclick="window.print()"]').forEach(el => {
+            el.removeAttribute('onclick');
+            el.addEventListener('click', () => window.print());
+        });
+    </script>
 </body>
 
 </html>

@@ -1,4 +1,3 @@
-<!-- recu_pdf.blade.php -->
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -119,7 +118,7 @@
             margin-right: 4px;
         }
 
-        /* ===== Meta grid (remplacé par inline-block) ===== */
+        /* ===== Meta grid ===== */
         .meta-grid {
             margin-bottom: 28px;
             background: #f8faf9;
@@ -134,7 +133,6 @@
             display: inline-block;
             width: 48.5%;
             vertical-align: top;
-            /* padding-right: 3%; */
             padding-bottom: 12px;
         }
 
@@ -198,7 +196,7 @@
             color: #1D603D;
         }
 
-        /* ===== Résumé du paiement (remplacé par float) ===== */
+        /* ===== Résumé du paiement ===== */
         .payment-summary {
             background: #eef6f1;
             border-radius: 12px;
@@ -240,11 +238,11 @@
         <div class="header clearfix">
             <div class="header-left clearfix">
                 <div class="logo">
-                    <img src="data:image/jpg;base64,{{ base64_encode(file_get_contents(public_path('assets/images/ynov-logo.jpg'))) }}" width="50" height="50" style="border-radius:15%;" alt="">
+                    <img src="data:image/jpg;base64,{{ base64_encode(file_exists(public_path('assets/images/ynov-logo.jpg')) ? file_get_contents(public_path('assets/images/ynov-logo.jpg')) : '') }}" width="50" height="50" style="border-radius:15%;" alt="">
                 </div>
                 <div class="title-block">
                     <h1>Reçu de paiement</h1>
-                    <span style="font-size:12px; color:#6b7280; font-weight:500;">N° {{ $paiement->command_number ?? '' }}</span>
+                    <span style="font-size:12px; color:#6b7280; font-weight:500;">N° {{ $paiement->codePaiement ?? '' }}</span>
                 </div>
             </div>
             <div class="header-right">
@@ -312,7 +310,7 @@
                         {{ number_format($facture->prime, 0, ',', ' ') }} F CFA
                     </td>
                     <td style="text-align:right; font-weight:600;">
-                        {{ $facture->libelleTypeFacture ?? '' }}
+                        {{ $facture->libelleTypeFacture ?? $facture->typeFacture }}
                     </td>
                 </tr>
                 @empty
@@ -330,7 +328,7 @@
             <span class="amount">{{ number_format($paiement->montant ?? 0, 0, ',', ' ') }} F CFA</span>
         </div>
 
-        @if(($paiement->typeReglement ?? '') === 'firstPayment' && isset($fraisAdhesion))
+        @if(($paiement->typeReglement ?? '') === 'firstPayment')
         <div style="font-size:12px; color:#6b7280; text-align:center; padding:8px 0 4px; border-top:1px solid #eef2f0;">
             <span>Ce paiement comprend la première prime et les frais d'adhésion.</span>
         </div>
@@ -341,12 +339,10 @@
             <span>Ce paiement régularise {{ $factures->count() }} prime{{ $factures->count() > 1 ? 's' : '' }} impayée{{ $factures->count() > 1 ? 's' : '' }}.</span>
         </div>
         @endif
-
         <div class="footer-note">
             Ce document tient lieu de justificatif de paiement.<br>
             En cas de question, contactez notre service client.
         </div>
     </div>
 </body>
-
 </html>

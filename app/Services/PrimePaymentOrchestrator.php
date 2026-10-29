@@ -7,6 +7,7 @@ use App\Models\TblPaiement;
 use App\Services\EncaissementBisService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 /**
  * Construit le montant à facturer et prépare les enregistrements tblpaiement / tblfacture
  * pour les 3 types de paiement (firstPayment, earlyPayment, recoveryPrime).
@@ -162,46 +163,112 @@ class PrimePaymentOrchestrator
      */
     public function enregistrer(array $donnees, array $preparation, string $referenceInterne, array $resultatJeko): TblPaiement
     {
-        return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko) {
-            // $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
-            $paiement = TblPaiement::create([
-                'command_number' => $referenceInterne,
-                // 'codePaiement' => $referenceInterne,
-                'montant' => $preparation['montantTotal'],
-                'etat' => 1, // en attente de confirmation webhook pour passer à 2
-                'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),
-                'payment_mode' => $donnees['paymentMethod'],
-                'payment_status' => $resultatJeko['status'] ?? 'pending',
-                'typePaiement' => 1,
-                'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? $donnees['idProposition'] : null,
-                'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : null,
-                // 'typeReference' => $donnees['paymentType'],
-                'typeReglement' => $donnees['paymentType'],
-                'reglementSource' => 'JEKO',
-                'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? $donnees['idProposition'] : null,
-                // 'referenceSource' => $preparation['referenceSource'],
-                'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),
-                'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
-                'emailpayeur' => $donnees['customerEmail'] ?? null,
-                'saisiele' => Carbon::now()->format('Y-m-d H:i:s')
-            ]);
-
-            foreach ($preparation['facturesAGenerer'] as $ligne) {
-                TblFacture::create([
-                    // 'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
+        try {
+            return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko) {
+                // $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
+                $paiement = TblPaiement::create([
                     'codePaiement' => $referenceInterne,
-                    'prime' => $ligne['prime'],
-                    'typeFacture' => $ligne['type'],
+                    'command_number' => $referenceInterne,
+                    'payment_token' => $resultatJeko['paymentId'] ?? null,
+                    'montant' => $preparation['montantTotal'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
-                    'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
-                    'typePaiement' => 1, 
-                    'referenceSource' => $ligne['referenceOrigine'],
-                    'idcontrat' => $donnees['contractId'] ?? $donnees['idProposition'] ?? null,
-                    'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),
+                    'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),
+                    'payment_mode' => $donnees['paymentMethod'],
+                    'payment_status' => $resultatJeko['status'] ?? 'pending',
+                    'typePaiement' => 1,
+                    'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? ($preparation['idProposition'] ?? null) : null,
+                    'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : $donnees['contractId'] ?? null,
+                    // 'typeReference' => $donnees['paymentType'],
+                    'typeReglement' => $donnees['paymentType'],
+                    'reglementSource' => 'JEKO',
+                    'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? ($preparation['idProposition'] ?? null) : null,
+                    // 'referenceSource' => $preparation['referenceSource'],
+                    'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),
+                    'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
+                    'emailpayeur' => $donnees['customerEmail'] ?? null,
+                    'saisiele' => Carbon::now()->format('Y-m-d H:i:s')
+                ]);
+
+                foreach ($preparation['facturesAGenerer'] as $ligne) {
+                    TblFacture::create([
+                        // 'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
+                        'codePaiement' => $referenceInterne,
+                        'prime' => $ligne['prime'],
+                        'typeFacture' => $ligne['type'],
+                        'etat' => 1, // en attente de confirmation webhook pour passer à 2
+                        'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
+                        'typePaiement' => 1,
+                        'referenceSource' => $ligne['referenceOrigine'],
+                        'idcontrat' => $donnees['contractId'] ?? $donnees['idProposition'] ?? null,
+                        'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),
+                    ]);
+                }
+
+                return $paiement;
+            });
+        } catch (\Throwable $e) {
+            Log::error('Erreur lors de l\'enregistrement du paiement', [
+                'referenceInterne' => $referenceInterne,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Met à jour le statut d'un paiement et de ses factures
+     */
+    public function mettreAJourStatut(TblPaiement $paiement, string $statut, array $payload = []): void
+    {
+        DB::transaction(function () use ($paiement, $statut, $payload) {
+            // Mise à jour du paiement
+            $updateData = [
+                'payment_status' => $statut,
+            ];
+
+            if ($statut === 'success') {
+                $updateData['etat'] = 2; // Payé dans la convention APIMAINYNOV
+                // $updateData['paid_at'] = Carbon::now()->format('Y-m-d H:i:s');
+                $updateData['payment_validation_date'] = Carbon::now()->format('Y-m-d H:i:s');
+                // $updateData['paid_amount'] = $paiement->montant;
+                // $updateData['paid_sum'] = $paiement->montant;
+                $updateData['paid_amount'] = $payload['amount'];
+                $updateData['paid_sum'] = $payload['amount'];
+
+                if (!empty($payload['phone'])) {
+                    $updateData['telpaiement'] = $payload['phone'];
+                }
+
+                Log::info('Paiement marqué comme payé', [
+                    'reference' => $paiement->command_number,
+                ]);
+            } elseif ($statut === 'error' || $statut === 'cancelled') {
+                $updateData['etat'] = 1; // Erreur/Annulé dans la convention APIMAINYNOV
+
+                Log::warning('Paiement marqué comme ' . $statut, [
+                    'reference' => $paiement->command_number,
                 ]);
             }
 
-            return $paiement;
+            $paiement->update($updateData);
+
+            // Mise à jour des factures associées
+            $factureStatus = match ($statut) {
+                'success' => 2, // Payé
+                'error', 'cancelled' => 1, // Erreur/Annulé
+                default => 1, // En attente
+            };
+
+            $updatedCount = TblFacture::where('codePaiement', $paiement->codePaiement)
+                ->update([
+                    'etat' => $factureStatus,
+                ]);
+
+            Log::info('Factures mises à jour', [
+                'status' => $factureStatus,
+                'count' => $updatedCount,
+            ]);
         });
     }
 

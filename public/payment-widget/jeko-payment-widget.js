@@ -30,10 +30,11 @@
 //  *   });
 //  * </script>
 //  */
-
 /**
  * Jeko Payment Widget - Version améliorée avec icônes
  * Avec meilleure gestion d'erreurs, accessibilité et UX
+ * + Vérification automatique du contrat pour les 3 types de paiement
+ * + Pré-sélection des factures à régulariser
  */
 
 (function (window, document) {
@@ -108,11 +109,21 @@
     const DEFAULT_OPTIONS = {
         backendEndpoint: "/api/paiements/jeko/init",
         contractCheckEndpoint: "/api/paiements/jeko/contrat/verifier",
+        statusCheckEndpoint: "/api/paiements/jeko/statut",
         currency: "XOF",
         successUrl: null,
         errorUrl: null,
         timeout: 30000,
         headers: {},
+        // Déclenche automatiquement la vérification du contrat à
+        // l'ouverture du widget si un contractId est déjà fourni
+        // (pour earlyPayment et recoveryPrime). Toujours actif pour
+        // firstPayment. Désactivable par l'application hôte.
+        autoVerifyContract: true,
+        // Intervalle de polling du statut (en millisecondes)
+        statusPollInterval: 3000,
+        // Nombre maximum de tentatives de polling
+        statusPollMaxAttempts: 60,
         theme: {
             primary: "#1D603D",
             primaryDark: "#0B482F",
@@ -154,6 +165,8 @@
             noUnpaidInvoices: "Aucune facture impayée sur ce contrat.",
             switchToEarly: "Payer en avance à la place",
             selectInvoicesLabel: "Sélectionnez les primes à régulariser",
+            selectAllLabel: "Tout cocher",
+            deselectAllLabel: "Tout décocher",
             totalLabel: "Total à régler",
             firstPaymentBase: "Première prime",
             firstPaymentFees: "Frais d'adhésion",
@@ -169,6 +182,13 @@
             summaryAmount: "Montant à payer",
             changeMethod: "Modifier",
             loadingContract: "Chargement des informations du contrat...",
+            // États de polling du statut
+            polling: "Vérification du statut du paiement en cours...",
+            pollingPending: "Paiement en attente...",
+            pollingSuccess: "Paiement réussi !",
+            pollingError: "Le paiement a échoué",
+            pollingTimeout: "Délai d'attente dépassé",
+            pollingRestart: "Vérifier à nouveau",
         },
         callbacks: {
             onSuccess: null,
@@ -230,6 +250,8 @@
         pointer-events:none;
       }
       .jeko-header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; position:relative; z-index:1; }
+      .jeko-header-title { display:flex; align-items:center; gap:12px; }
+      .jeko-logo { width:40px; height:40px; border-radius:8px; object-fit:cover; }
       .jeko-header h3 { margin:0; font-size:17px; font-weight:700; letter-spacing:.2px; display:flex; align-items:center; gap:8px; }
       .jeko-header h3::before {
         content:"🔒"; font-size:14px; opacity:.9;
@@ -420,6 +442,36 @@
         padding:15px 17px; border-bottom:1px solid #f0f0f0;
       }
       .jeko-summary-row:last-child { border-bottom:none; }
+
+      /* Result state */
+      .jeko-state {
+        text-align:center; padding:40px 30px;
+        animation: jeko-pop .3s ease;
+      }
+      .jeko-state .icon { font-size:48px; display:block; margin-bottom:16px; }
+      .jeko-state h4 { font-size:18px; font-weight:700; color:#111827; margin:0 0 8px; }
+      .jeko-state p { font-size:14px; color:#6b7280; margin:0; line-height:1.5; }
+      .jeko-state.success .icon { color:#22c55e; }
+      .jeko-state.error .icon { color:#dc2626; }
+      .jeko-state.polling .icon { display:none; }
+      .jeko-state.polling h4 { color:var(--jeko-primary-dark); }
+
+      /* Spinner */
+      .jeko-state.polling .spinner {
+        width:48px; height:48px; margin:0 auto 20px;
+        border:4px solid #e5e7eb; border-top-color:var(--jeko-primary);
+        border-radius:50%; animation: jeko-spin 1s linear infinite;
+      }
+      @keyframes jeko-spin { to { transform:rotate(360deg); } }
+
+      /* Retry button */
+      .jeko-retry {
+        margin-top:20px; padding:12px 24px; border-radius:11px;
+        border:2px solid var(--jeko-primary); background:#fff;
+        color:var(--jeko-primary-dark); font-weight:700; font-size:14px;
+        cursor:pointer; transition:all .15s;
+      }
+      .jeko-retry:hover { background:var(--jeko-primary); color:#fff; }
       .jeko-summary-row .label { font-size:12.5px; color:#6b7280; font-weight:600; }
       .jeko-summary-row .value { font-size:13.5px; color:#111827; font-weight:700; text-align:right; }
       .jeko-summary-row .value.method { display:flex; align-items:center; gap:8px; }
@@ -528,9 +580,13 @@
          * {
          *   reference,                 // requis, référence métier unique
          *   paymentType,               // requis: 'firstPayment' | 'earlyPayment' | 'recoveryPrime'
-         *   contractId,                // requis pour earlyPayment / recoveryPrime, optionnel pour firstPayment
-         *   primeUnitaire,             // XOF, requis pour firstPayment si contractId absent
-         *   fraisAdhesion,             // XOF, requis pour firstPayment si contractId absent
+         *   contractId,                // optionnel : si fourni pour earlyPayment/recoveryPrime,
+         *                              // la vérification du contrat est automatique à l'ouverture
+         *                              // (comportement identique à firstPayment)
+         *   preselectedInvoiceIds,     // optionnel (recoveryPrime) : tableau d'IdPresentation
+         *                              // déjà cochés par l'utilisateur côté app hôte ; seront
+         *                              // automatiquement pré-cochés dans le widget après
+         *                              // vérification, filtrés sur les factures réellement impayées
          *   currency, description, customerEmail, customerName, metadata
          * }
          */
@@ -551,7 +607,12 @@
             this._selectedMethod = null;
             this._numberOfPrimes = 1;
             this._contractInfo = null;
-            this._selectedInvoiceIds = new Set();
+            // Pré-sélection des factures fournies par l'appelant (recoveryPrime)
+            this._selectedInvoiceIds = new Set(
+                Array.isArray(paymentData.preselectedInvoiceIds)
+                    ? paymentData.preselectedInvoiceIds.map(String)
+                    : [],
+            );
             this._blocked = false;
             this._additionalPrimes = false;
             this._additionalPrimesCount = 0;
@@ -563,14 +624,21 @@
             if (this.options.callbacks.onOpen)
                 this.options.callbacks.onOpen(this._paymentData);
 
-            // Pour firstPayment : la vérification du contrat est automatique,
-            // l'utilisateur n'a pas à saisir/soumettre un identifiant.
+            // Vérification automatique du contrat à l'ouverture :
+            // - firstPayment : toujours automatique
+            // - earlyPayment / recoveryPrime : automatique si contractId fourni
             if (this._paymentData.paymentType === "firstPayment") {
                 this._autoVerifyFirstPayment();
+            } else if (
+                this._paymentData.contractId &&
+                this.options.autoVerifyContract
+            ) {
+                this._autoVerifyContract(this._paymentData.contractId);
             }
         }
 
         close() {
+            this._clearStatusPoll();
             if (this._overlay) {
                 this._overlay.remove();
                 this._overlay = null;
@@ -633,6 +701,42 @@
             return 0;
         }
 
+        _updateTotalAndSubmitButton() {
+            const total = this._computeAmount();
+            const t = this.options.translations;
+            const modal = this._modal;
+
+            // Mettre à jour le total
+            const totalBar = modal.querySelector('.jeko-total-bar');
+            if (totalBar) {
+                totalBar.innerHTML = `<span>${t.totalLabel}</span><span>${formatAmount(total, this._paymentData.currency)}</span>`;
+            }
+
+            // Mettre à jour l'état du bouton submit
+            const submitBtn = modal.querySelector('[data-action="submit-payment"]');
+            if (submitBtn) {
+                submitBtn.disabled = !this._canProceedFromStep2();
+            }
+        }
+
+        _updateTotalAndSubmitButton() {
+            const total = this._computeAmount();
+            const t = this.options.translations;
+            const modal = this._modal;
+
+            // Mettre à jour le total
+            const totalBar = modal.querySelector('.jeko-total-bar');
+            if (totalBar) {
+                totalBar.innerHTML = `<span>${t.totalLabel}</span><span>${formatAmount(total, this._paymentData.currency)}</span>`;
+            }
+
+            // Mettre à jour l'état du bouton submit
+            const submitBtn = modal.querySelector('[data-action="submit-payment"]');
+            if (submitBtn) {
+                submitBtn.disabled = !this._canProceedFromStep2();
+            }
+        }
+
         _isFirstPayment() {
             return this._paymentData.paymentType === "firstPayment";
         }
@@ -666,7 +770,10 @@
             return `
         <div class="jeko-header">
           <div class="jeko-header-top">
-            <h3>${t.title}</h3>
+            <div class="jeko-header-title">
+              <img src="/assets/images/ynov-logo.jpg" alt="Logo" class="jeko-logo" />
+              <h3>${t.title}</h3>
+            </div>
             <button type="button" class="jeko-close" aria-label="${t.close}">&times;</button>
           </div>
           ${this._stepperHeaderTemplate()}
@@ -735,8 +842,10 @@
         _footerTemplate() {
             const t = this.options.translations;
             if (this._step === 1) {
-                // Pour firstPayment, la vérification est automatique : tant qu'elle est
-                // en cours ou pas encore faite, on n'affiche pas de bouton "Continuer".
+                // Pour firstPayment (et earlyPayment/recoveryPrime en cours de
+                // vérification auto), tant que le contrat n'est pas encore
+                // vérifié, on n'affiche pas de bouton "Continuer".
+                if (this._isVerifyingContract) return "";
                 if (this._isFirstPayment()) {
                     if (!this._contractInfo) return "";
                     return `<button type="button" class="jeko-submit" data-action="go-step-2">${t.continueToSummary}</button>`;
@@ -773,7 +882,10 @@
             footer.innerHTML = this._footerTemplate();
             header.innerHTML = `
         <div class="jeko-header-top">
-          <h3>${this.options.translations.title}</h3>
+          <div class="jeko-header-title">
+            <img src="/assets/images/ynov-logo.jpg" alt="Logo" class="jeko-logo" />
+            <h3>${this.options.translations.title}</h3>
+          </div>
           <button type="button" class="jeko-close" aria-label="${this.options.translations.close}">&times;</button>
         </div>
         ${this._stepperHeaderTemplate()}
@@ -826,6 +938,72 @@
             }
         }
 
+        // ---------- Vérification automatique (earlyPayment / recoveryPrime) ----------
+        // Déclenchée à l'ouverture du widget lorsqu'un contractId est déjà
+        // connu (ex: fourni par l'app hôte via btnEarlyPayment / btnRecoveryPrime).
+
+        async _autoVerifyContract(idContrat) {
+            this._isVerifyingContract = true;
+            this._refreshBody();
+
+            const t = this.options.translations;
+            try {
+                const res = await fetch(this.options.contractCheckEndpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        ...this.options.headers,
+                    },
+                    body: JSON.stringify({
+                        idContrat,
+                        paymentType: this._paymentData.paymentType,
+                    }),
+                });
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    this._isVerifyingContract = false;
+                    this._refreshBody();
+                    this._showGeneralError(data.message || t.error);
+                    return;
+                }
+
+                this._paymentData.contractId = idContrat;
+                this._contractInfo = data.data;
+                this._blocked =
+                    this._paymentData.paymentType === "earlyPayment" &&
+                    this._contractInfo.aDesImpayes === true;
+
+                // Filtrer les factures pré-sélectionnées transmises par l'app
+                // hôte pour ne garder que celles réellement impayées selon
+                // la réponse de vérification, puis les cocher automatiquement.
+                if (
+                    this._paymentData.paymentType === "recoveryPrime" &&
+                    this._selectedInvoiceIds.size > 0
+                ) {
+                    const disponibles = new Set(
+                        (this._contractInfo.facturesImpayees || []).map((f) =>
+                            String(f.IdPresentation),
+                        ),
+                    );
+                    this._selectedInvoiceIds = new Set(
+                        Array.from(this._selectedInvoiceIds).filter((id) =>
+                            disponibles.has(id),
+                        ),
+                    );
+                }
+
+                this._isVerifyingContract = false;
+                this._refreshBody();
+            } catch (e) {
+                console.error(e);
+                this._isVerifyingContract = false;
+                this._refreshBody();
+                this._showGeneralError(t.networkError);
+            }
+        }
+
         // ---------- Step 1 : contrat ----------
 
         _step1Template() {
@@ -837,6 +1015,12 @@
                     return this._contractLoadingTemplate();
                 }
                 return this._firstPaymentTemplate();
+            }
+
+            // Vérification automatique en cours (contractId déjà fourni à
+            // l'ouverture pour earlyPayment / recoveryPrime)
+            if (this._isVerifyingContract) {
+                return this._contractLoadingTemplate();
             }
 
             if (!this._contractInfo) {
@@ -870,11 +1054,12 @@
           `;
                 }
                 const total = this._computeAmount();
+                const allSelected = list.length > 0 && list.every(f => this._selectedInvoiceIds.has(String(f.IdPresentation)));
                 const itemsHtml = list
                     .map(
                         (f) => `
           <label class="jeko-invoice-item">
-            <input type="checkbox" data-invoice="${f.IdPresentation}" ${this._selectedInvoiceIds.has(f.IdPresentation) ? "checked" : ""} />
+            <input type="checkbox" data-invoice="${f.IdPresentation}" ${this._selectedInvoiceIds.has(String(f.IdPresentation)) ? "checked" : ""} />
             <span class="meta">${f.MaDate || ""} — réf ${f.IdPresentation || ""} — ${f.CodePresentation}</span>
             <span class="amount">${formatAmount(f.MontantNet, this._paymentData.currency)}</span>
           </label>`,
@@ -883,6 +1068,7 @@
                 return `
           <div class="jeko-notice info">${this._contractSummaryTemplate()}</div>
           <span class="jeko-section-label">${t.selectInvoicesLabel}</span>
+          <button type="button" class="jeko-link-btn" data-toggle-all="true" style="margin-bottom: 10px;">${allSelected ? t.deselectAllLabel : t.selectAllLabel}</button>
           <div class="jeko-invoice-list">${itemsHtml}</div>
           <div class="jeko-total-bar"><span>${t.totalLabel}</span><span>${formatAmount(total, this._paymentData.currency)}</span></div>
         `;
@@ -1125,9 +1311,39 @@
                     const id = cb.dataset.invoice;
                     if (cb.checked) this._selectedInvoiceIds.add(id);
                     else this._selectedInvoiceIds.delete(id);
-                    this._refreshBody();
+                    // Ne pas recharger tout le body pour éviter le scroll
+                    // Mettre à jour seulement le total et le bouton submit
+                    this._updateTotalAndSubmitButton();
                 });
             });
+
+            // Handler pour le bouton "Tout cocher / Tout décocher"
+            const toggleAllBtn = modal.querySelector('[data-toggle-all]');
+            if (toggleAllBtn) {
+                toggleAllBtn.addEventListener("click", () => {
+                    const t = this.options.translations;
+                    const list = this._contractInfo?.facturesImpayees || [];
+                    const allSelected = list.every(f => this._selectedInvoiceIds.has(String(f.IdPresentation)));
+
+                    if (allSelected) {
+                        // Tout décocher
+                        this._selectedInvoiceIds.clear();
+                    } else {
+                        // Tout cocher
+                        list.forEach(f => this._selectedInvoiceIds.add(String(f.IdPresentation)));
+                    }
+
+                    // Mettre à jour l'état des checkboxes et le total
+                    modal.querySelectorAll("[data-invoice]").forEach(cb => {
+                        cb.checked = this._selectedInvoiceIds.has(cb.dataset.invoice);
+                    });
+                    this._updateTotalAndSubmitButton();
+
+                    // Mettre à jour le texte du bouton
+                    const newAllSelected = list.every(f => this._selectedInvoiceIds.has(String(f.IdPresentation)));
+                    toggleAllBtn.textContent = newAllSelected ? t.deselectAllLabel : t.selectAllLabel;
+                });
+            }
 
             const verifyBtn = modal.querySelector('[data-action="verify-contract"]');
             if (verifyBtn)
@@ -1163,6 +1379,9 @@
                 });
         }
 
+        // Vérification manuelle déclenchée par le bouton "Vérifier le
+        // contrat" (utilisée quand aucun contractId n'a été fourni à
+        // l'ouverture, quel que soit le type de paiement).
         async _verifyContract() {
             if (this._isVerifyingContract) return;
             this._isVerifyingContract = true;
@@ -1216,6 +1435,26 @@
                 this._blocked =
                     this._paymentData.paymentType === "earlyPayment" &&
                     this._contractInfo.aDesImpayes === true;
+
+                // Applique aussi le filtrage des pré-sélections lors d'une
+                // vérification manuelle (au cas où l'app hôte avait fourni
+                // preselectedInvoiceIds sans contractId initial).
+                if (
+                    this._paymentData.paymentType === "recoveryPrime" &&
+                    this._selectedInvoiceIds.size > 0
+                ) {
+                    const disponibles = new Set(
+                        (this._contractInfo.facturesImpayees || []).map((f) =>
+                            String(f.IdPresentation),
+                        ),
+                    );
+                    this._selectedInvoiceIds = new Set(
+                        Array.from(this._selectedInvoiceIds).filter((id) =>
+                            disponibles.has(id),
+                        ),
+                    );
+                }
+
                 this._refreshBody();
             } catch (e) {
                 if (btn) {
@@ -1324,8 +1563,8 @@
                     paymentType === "recoveryPrime"
                         ? Array.from(this._selectedInvoiceIds)
                         : undefined,
-                successUrl: this.options.successUrl || window.location.href,
-                errorUrl: this.options.errorUrl || window.location.href,
+                successUrl: this._paymentData.successUrl || this.options.successUrl || window.location.href,
+                errorUrl: this._paymentData.errorUrl || this.options.errorUrl || window.location.href,
                 description,
                 customerEmail,
                 customerName,
@@ -1358,6 +1597,7 @@
                 }
 
                 const redirectUrl = data.data?.redirectUrl;
+                const referenceInterne = data.data?.referenceInterne;
                 if (!redirectUrl) {
                     this._renderResultState(
                         "error",
@@ -1368,14 +1608,19 @@
                     return;
                 }
 
-                this._renderResultState("success", t.success, t.successMessage);
-                if (this.options.callbacks.onSuccess)
-                    this.options.callbacks.onSuccess(redirectUrl, data);
-                setTimeout(() => {
-                    // Fermer le modal
-                    this.close();
-                    window.open(redirectUrl, "_blank");
-                }, 1500);
+                // Ouvrir la page de paiement dans un nouvel onglet
+                window.open(redirectUrl, "_blank");
+
+                // Commencer le polling du statut du paiement
+                if (referenceInterne) {
+                    this._startStatusPolling(referenceInterne);
+                } else {
+                    // Fallback si pas de référence : afficher succès et fermer
+                    this._renderResultState("success", t.success, t.successMessage);
+                    if (this.options.callbacks.onSuccess)
+                        this.options.callbacks.onSuccess(redirectUrl, data);
+                    setTimeout(() => this.close(), 1500);
+                }
             } catch (error) {
                 const msg =
                     error.name === "AbortError"
@@ -1386,6 +1631,122 @@
                     this.options.callbacks.onError(msg, null);
             } finally {
                 this._isSubmitting = false;
+            }
+        }
+
+        // ---------- Polling du statut du paiement ----------
+
+        async _startStatusPolling(referenceInterne) {
+            const t = this.options.translations;
+            const pollInterval = this.options.statusPollInterval || 3000;
+            const maxAttempts = this.options.statusPollMaxAttempts || 20;
+            let attempts = 0;
+
+            // Stocker la référence pour pouvoir relancer le polling
+            this._currentReference = referenceInterne;
+
+            // Afficher l'état de polling avec spinner
+            this._renderPollingState();
+
+            this._statusPollTimer = setInterval(async () => {
+                attempts++;
+
+                try {
+                    const response = await fetch(
+                        `${this.options.statusCheckEndpoint}/${referenceInterne}`
+                    );
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        console.error("Erreur lors de la vérification du statut:", data);
+                        return;
+                    }
+
+                    const status = data.data?.statut;
+
+                    if (status === "success") {
+                        // Paiement réussi - le webhook s'en charge de la mise à jour en base
+                        this._clearStatusPoll();
+                        this._renderResultState(
+                            "success",
+                            t.pollingSuccess,
+                            "Votre paiement a été effectué avec succès.",
+                        );
+                        if (this.options.callbacks.onSuccess) {
+                            this.options.callbacks.onSuccess(null, data);
+                        }
+                        setTimeout(() => this.close(), 3000);
+                    } else if (status === "error") {
+                        // Paiement échoué - mettre à jour le statut en base
+                        this._clearStatusPoll();
+                        this._renderResultState(
+                            "error",
+                            t.pollingError,
+                            "Le paiement a échoué. Veuillez réessayer.",
+                            { showRetry: true },
+                        );
+                        if (this.options.callbacks.onError) {
+                            this.options.callbacks.onError("Paiement échoué", data);
+                        }
+                    } else if (status === "pending") {
+                        // Paiement toujours en attente - continuer le polling
+                        this._updatePollingMessage(t.pollingPending);
+                    } else {
+                        // Statut inconnu
+                        console.warn("Statut inconnu:", status);
+                    }
+                } catch (error) {
+                    console.error("Erreur lors du polling:", error);
+                }
+
+                // Arrêter le polling après le nombre maximum de tentatives
+                if (attempts >= maxAttempts) {
+                    this._clearStatusPoll();
+                    this._renderPollingTimeoutState(referenceInterne);
+                }
+            }, pollInterval);
+        }
+
+        _clearStatusPoll() {
+            if (this._statusPollTimer) {
+                clearInterval(this._statusPollTimer);
+                this._statusPollTimer = null;
+            }
+        }
+
+        _renderPollingState() {
+            const t = this.options.translations;
+            this._modal.innerHTML = `
+        <div class="jeko-state polling">
+          <div class="spinner"></div>
+          <h4>${t.polling}</h4>
+          <p>${t.pollingPending}</p>
+        </div>`;
+        }
+
+        _updatePollingMessage(message) {
+            const msgEl = this._modal.querySelector(".jeko-state.polling p");
+            if (msgEl) {
+                msgEl.textContent = message;
+            }
+        }
+
+        _renderPollingTimeoutState(referenceInterne) {
+            const t = this.options.translations;
+            this._modal.innerHTML = `
+        <div class="jeko-state error">
+          <span class="icon">⏱️</span>
+          <h4>${t.pollingTimeout}</h4>
+          <p>Le délai d'attente a été dépassé. Vérifiez si vous avez effectué le paiement sur la page Jeko.</p>
+          <button type="button" class="jeko-retry jeko-restart-poll">${t.pollingRestart}</button>
+        </div>`;
+
+            // Attacher l'événement pour relancer le polling
+            const restartBtn = this._modal.querySelector(".jeko-restart-poll");
+            if (restartBtn) {
+                restartBtn.addEventListener("click", () => {
+                    this._startStatusPolling(referenceInterne);
+                });
             }
         }
 

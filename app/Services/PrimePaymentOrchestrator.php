@@ -50,7 +50,7 @@ class PrimePaymentOrchestrator
             $fraisAdhesion = $contrat['fraisAdhesion'];
         }
 
-        
+
 
         if ($primeUnitaire <= 0) {
             throw new \RuntimeException('Montant de prime invalide pour le premier paiement.');
@@ -61,7 +61,7 @@ class PrimePaymentOrchestrator
 
         return [
             'montantTotal' => $montantTotal,
-            'nombreDePrimes' => $nombreDePrimes,
+            'nombreDePrimes' => $nombreDePrimes + ($fraisAdhesion == 0 ? 0 : 1),
             'contractId' => $donnees['contractId'],
             'reference' => $donnees['reference'],
             'primeUnitaire' => $primeUnitaire,
@@ -116,7 +116,6 @@ class PrimePaymentOrchestrator
         }
 
         $facturesSelectionnees = $resultat['facturesSelectionnees'];
-
         return [
             'montantTotal' => $resultat['totalCents'],
             'nombreDePrimes' => count($facturesSelectionnees),
@@ -130,7 +129,8 @@ class PrimePaymentOrchestrator
                 'referenceOrigine' => $f['IdPresentation'],
                 'dateFacturation' => (!empty($f['MaDate'])) ? Carbon::createFromFormat('d/m/Y', $f['MaDate'])->format('Y-m-d H:i:s') : null,
                 'type' => 'N',
-            ], $facturesSelectionnees),
+            ],
+            $facturesSelectionnees),
         ];
     }
 
@@ -160,27 +160,28 @@ class PrimePaymentOrchestrator
     /**
      * Enregistre tblpaiement + les lignes tblfacture associées dans une transaction.
      */
-    public function enregistrer(array $donnees, array $preparation, string $referenceInterne, array $resultatJeko): TblPaiement
+    public function enregistrer(array $donnees, array $preparation, string $referenceInterne, array $resultatJeko, $reglementSource = 'JEKO'): TblPaiement
     {
-        return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko) {
+        return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko, $reglementSource) {
             // $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
             $paiement = TblPaiement::create([
+                'codePaiement' => $referenceInterne,
                 'command_number' => $referenceInterne,
-                // 'codePaiement' => $referenceInterne,
                 'montant' => $preparation['montantTotal'],
                 'etat' => 1, // en attente de confirmation webhook pour passer à 2
                 'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),
                 'payment_mode' => $donnees['paymentMethod'],
                 'payment_status' => $resultatJeko['status'] ?? 'pending',
                 'typePaiement' => 1,
-                'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? $donnees['idProposition'] : null,
+                'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? $preparation['idProposition'] : null,
                 'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : null,
-                // 'typeReference' => $donnees['paymentType'],
+                'payment_token' => $resultatJeko['paymentId'],
                 'typeReglement' => $donnees['paymentType'],
-                'reglementSource' => 'JEKO',
-                'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? $donnees['idProposition'] : null,
+                'reglementSource' => $reglementSource,
+                'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? $preparation['idProposition'] : null,
                 // 'referenceSource' => $preparation['referenceSource'],
-                'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),
+                'nombreDePrime' => $preparation['nombreDePrimes'],
+                // 'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),
                 'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
                 'emailpayeur' => $donnees['customerEmail'] ?? null,
                 'saisiele' => Carbon::now()->format('Y-m-d H:i:s')
@@ -194,7 +195,7 @@ class PrimePaymentOrchestrator
                     'typeFacture' => $ligne['type'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
                     'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
-                    'typePaiement' => 1, 
+                    'typePaiement' => 1,
                     'referenceSource' => $ligne['referenceOrigine'],
                     'idcontrat' => $donnees['contractId'] ?? $donnees['idProposition'] ?? null,
                     'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),

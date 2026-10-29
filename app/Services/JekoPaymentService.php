@@ -2,7 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Contrat;
+use App\Models\TblDocument;
+use App\Models\TblFacture;
 use App\Models\TblPaiement;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -189,6 +194,99 @@ class JekoPaymentService
             'ancien_statut' => $ancienStatut,
             'nouveau_statut' => $paiement->statut,
         ];
+    }
+
+
+    public function generateReceipt(string $codePaiement, string $typeReglement)
+    {
+        try {
+            $externalUploadDir = base_path(env('UPLOADS_PATH'));
+            if (!is_dir($externalUploadDir)) {
+                mkdir($externalUploadDir, 0777, true);
+            }
+
+            $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
+            $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
+
+            $libellesTypeFacture = [
+                'N' => 'Prime principale',
+                'F' => 'Frais d\'adhésion',
+            ];
+
+            $libellesType = [
+                'firstPayment' => 'Premier paiement',
+                'earlyPayment' => 'Paiement anticipé',
+                'recoveryPrime' => 'Régularisation de primes',
+            ];
+
+            $libelleType = $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement;
+
+            $factures = TblFacture::where('codePaiement', $codePaiement)
+                ->orderBy('dateAjout')
+                ->get()
+                ->map(function ($facture) use ($libellesTypeFacture) {
+                    $facture->libelleTypeFacture =
+                        $libellesTypeFacture[$facture->typeFacture]
+                        ?? $facture->typeFacture;
+                    return $facture;
+                });
+
+            // Charger la vue et générer le HTML
+            $html = view('paiement.recu_pdf', compact('paiement', 'factures', 'libelleType'))->render();
+
+            // Configurer DomPDF
+            $options = new Options();
+            $options->set('defaultFont', 'DejaVu Sans');
+            $options->set('isRemoteEnabled', false);
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isPhpEnabled', false);
+
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $identifiantContrat = ($paiement->typeReglement === 'firstPayment') ? $paiement->idContrat : $paiement->idproposition;
+
+            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
+            $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
+
+            // Sauvegarder le PDF
+            file_put_contents($filePath, $dompdf->output());
+
+            Log::info('PDF généré avec succès pour : ' . $codePaiement);
+
+            if ($typeReglement === 'firstPayment') {
+
+                // Ajoute le reçu au contrat
+                TblDocument::create([
+                    'codecontrat' => $paiement->idContrat,
+                    'filename' => $fileName,
+                    'libelle' => 'Recu de paiement',
+                    'saisiele' => now(),
+                    'saisiepar' => $contrat->saisiepar ?? null,
+                    'source' => "ES",
+                ]);
+
+                // Mettre le contrat en statut "payé"
+                $contrat->update(['estpaye' => 1]);
+            }
+
+            return [
+                'status' => 'success',
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Erreur génération PDF : ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return [
+                'status' => 'error',
+                'message' => 'Erreur lors de la génération du PDF : ' . $e->getMessage()
+            ];
+        }
     }
 
     /**

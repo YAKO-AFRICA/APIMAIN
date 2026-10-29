@@ -1,5 +1,6 @@
 <?php
 
+
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\CaisseEtatController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\SmsController;
 use App\Http\Controllers\Api\SouscriptionController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\TypeOperationController;
+use App\Http\Controllers\Api\WaveController;
 use App\Http\Controllers\Api\YvonController;
 use App\Http\Controllers\Api\YvonWidgetController;
 use App\Http\Controllers\Auth\AuthController;
@@ -50,18 +52,18 @@ Route::post('/log/request', [LogController::class, 'getRequestLogs'])->name('log
 
 
 // Route pour avoir la liste de tout les utilisateur Assurfin
-Route::post('/get/user/by/partner', [ApiController::class,'getUserByPartner' ])->name('getUserByPartner');
-Route::get('/get/user/assurfin', [ApiController::class,'getAllUserAssurFin' ])->name('getAllUserAssurFin');
-Route::post('/check/user', [ApiController::class,'userCheck' ])->name('userCheck');
+Route::post('/get/user/by/partner', [ApiController::class, 'getUserByPartner'])->name('getUserByPartner');
+Route::get('/get/user/assurfin', [ApiController::class, 'getAllUserAssurFin'])->name('getAllUserAssurFin');
+Route::post('/check/user', [ApiController::class, 'userCheck'])->name('userCheck');
 
 // Route pour les types d'opérations et les opérations
-Route::get('/get/type/operations', [TypeOperationController::class,'index' ]);
-Route::post('/store/type/operations', [TypeOperationController::class,'store' ]);
-Route::post('/update/type/operations/{uuid}', [TypeOperationController::class,'update' ]);
-Route::post('/destroy/type/operations/{uuid}', [TypeOperationController::class,'destroy' ]);
- Route::post('/activate/type/operations/{uuid}', [TypeOperationController::class, 'activate']);
+Route::get('/get/type/operations', [TypeOperationController::class, 'index']);
+Route::post('/store/type/operations', [TypeOperationController::class, 'store']);
+Route::post('/update/type/operations/{uuid}', [TypeOperationController::class, 'update']);
+Route::post('/destroy/type/operations/{uuid}', [TypeOperationController::class, 'destroy']);
+Route::post('/activate/type/operations/{uuid}', [TypeOperationController::class, 'activate']);
 
- // routes/api.php
+// routes/api.php
 Route::prefix('rapports')->group(function () {
     Route::get('/', [RapportController::class, 'index']);
     Route::post('/store', [RapportController::class, 'store']);
@@ -167,17 +169,17 @@ Route::prefix('/paiements/jeko')->group(function () {
     // Initialisation du paiement
     Route::post('/init', [JekoPaymentController::class, 'initierPaiement'])
         ->name('api.paiements.jeko.init');
-    
+
     // Vérification du statut
     Route::get('/statut/{referenceInterne}', [JekoPaymentController::class, 'verifierStatut'])
         ->name('api.paiements.jeko.statut');
-    
+
     // Vérification du contrat
     Route::post('/contrat/verifier', [JekoPaymentController::class, 'verifierContrat']);
-    
+
     // Widget
     Route::get('/jeko-payment-widget.js', [JekoPaymentController::class, 'jekoPaymentWidget']);
-    
+
     // Webhook pour les notifications
     Route::post('/webhook', [JekoPaymentController::class, 'webhook'])
         ->name('api.paiements.jeko.webhook');
@@ -203,7 +205,7 @@ Route::prefix('yvon')->middleware('auth:sanctum')->group(function () {
     Route::post('/voice',          [YvonController::class, 'voiceChat']);
     Route::delete('/session/{id}', [YvonController::class, 'deleteSession']);
 });
- 
+
 // ── 2. Routes widget public (rate-limit 60 req/min/IP) ───────
 //    Utilisées par widget.js intégré sur sites externes
 //    et par les applications mobiles
@@ -213,11 +215,11 @@ Route::prefix('widget/yvon')->middleware('throttle:60,1')->group(function () {
     Route::post('/voice',          [YvonWidgetController::class, 'voiceChat']);
     Route::delete('/session/{id}', [YvonWidgetController::class, 'deleteSession']);
 });
- 
+
 // ── 3. Routes publiques sans auth ────────────────────────────
 Route::get('/yvon/health',    [YvonController::class, 'health']);
 Route::get('/yvon/languages', [YvonController::class, 'languages']);
- 
+
 // ── 4. Servir le widget.js et l'icône depuis Laravel ─────────
 //    Permet : <script src="https://apimain.yakoafricassur.com/static/widget.js">
 Route::get('/static/widget.js', [YvonWidgetController::class, 'serveWidget']);
@@ -257,7 +259,7 @@ Route::prefix('suggestion')->group(function () {
     Route::get('/get/zone/{uuid}', [ParamController::class, 'showZoneByUser']); // methode get pour obtenir les détails d'une zone par utilisateur
     Route::post('/update/zone/{uuid}', [ParamController::class, 'updateZone']); // methode put pour mettre à jour une zone par utilisateur
 
-    // state des suggestion tableau de ord 
+    // state des suggestion tableau de ord
     Route::get('/state', [StateController::class, 'State']); // methode get pour obtenir l'état des suggestions
     Route::get('/getCategoryStatistics', [StateController::class, 'getCategoryStatistics']); // methode get pour obtenir l'état des suggestions par categorie
 
@@ -282,6 +284,57 @@ Route::prefix('motif')->group(function () {
 
 
 
+// //routes pour le paiement Wave
+
+// Route::prefix('wave')->name('wave.')->group(function () {
+
+
+//     Route::post('/paiements/contrat/verifier', [WaveController::class, 'verifierContrat'])->name('paiements.contrat.verifier');
+//     Route::post('/factures/contrat', [WaveController::class, 'afficherFactureImpayer'])->name('factures.contrat');
+
+//     // Initialisation du paiement (création de session Wave Checkout)
+//     Route::post('/paiements/init', [WaveController::class, 'initierPaiement'])
+//         ->name('api.paiements.wave.init');
+
+//     Route::get('/paiements/retour/success', [WaveController::class, 'retourSuccess'])
+//         ->name('retour.success');
+
+//     Route::get('/paiements/retour/error', [WaveController::class, 'retourError'])
+//         ->name('retour.error');
+
+//     // Vérification du statut d'une transaction
+//     // Route::get('/statut/{referenceInterne}', [WaveController::class, 'verifierStatut'])
+//     //     ->name('api.paiements.wave.statut');
+
+//     // ✅ Route spéciale : initiation directe avec montant
+//     Route::get('/directpay/{identifiant}/{montant}', [WaveController::class, 'payerDirect'])
+//        ->name('payer.direct');
+// });
+
+// Route::get('/_debug/wave-urls', function () {
+//     return [
+//         'app_url'     => config('app.url'),
+//         'app_env'     => app()->environment(),
+//         'success_url' => route('wave.retour.success', ['ref' => 'TEST']),
+//         'error_url'   => route('wave.retour.error',   ['ref' => 'TEST']),
+//     ];
+// });
+
+// Route::get('/paiements/wave/wave-payment-widget.js', [WaveController::class, 'wavePaymentWidget'])->name('api.paiements.wave.widget');
+
+
+
+// Route::prefix('wave')->name('wave.')->group(function () {
+//     Route::post('/paiements/contrat/verifier', [WaveController::class, 'verifierContrat'])->name('contrat.verifier');
+//     Route::post('/paiements/init', [WaveController::class, 'initierPaiement'])->name('init');
+//     Route::get('/paiements/retour/success', [WaveController::class, 'retourSuccess'])->name('retour.success');
+//     Route::get('/paiements/retour/error', [WaveController::class, 'retourError'])->name('retour.error');
+//     Route::get('/payer/{identifiant}/{montant}', [WaveController::class, 'payerDirect'])->name('payer.direct');
+//     Route::post('/webhook', [WaveController::class, 'webhook'])->name('webhook');
+//     Route::get('/wave-payment-widget.js', [WaveController::class, 'wavePaymentWidget'])->name('widget');
+//     Route::get('/statut/{referenceInterne}', [WaveController::class, 'verifierStatut'])->name('statut');
+//     Route::post('/factures/contrat', [WaveController::class, 'afficherFactureImpayer'])->name('factures.contrat');
+// });
 
 
 
@@ -289,8 +342,53 @@ Route::prefix('motif')->group(function () {
 
 
 
+// ============================================================
+// Routes Wave — Checkout + Webhook + Widget
+// ============================================================
+
+Route::prefix('wave')->name('wave.')->group(function () {
+
+    // Vérification de contrat
+    Route::post('/paiements/contrat/verifier', [WaveController::class, 'verifierContrat'])->name('paiements.contrat.verifier');
+
+    // Liste des factures impayées d'un contrat
+    Route::post('/factures/contrat', [WaveController::class, 'afficherFactureImpayer'])->name('factures.contrat');
+
+    // Initialisation du paiement (widget)
+    Route::post('/paiements/init', [WaveController::class, 'initierPaiement'])->name('api.paiements.wave.init');
+
+    // Webhook Wave
+    Route::post('/webhook', [WaveController::class, 'webhook'])->name('webhook');
+
+    // Retours après paiement
+    Route::get('/paiements/retour/success', [WaveController::class, 'retourSuccess'])->name('retour.success');
+
+    Route::get('/paiements/retour/error', [WaveController::class, 'retourError'])->name('retour.error');
+
+    // Vérification de statut
+    Route::get('/statut/{referenceInterne}', [WaveController::class, 'verifierStatut'])->name('statut');
+
+    // Paiement direct via URL
+    Route::get('/directpay/{identifiant}/{montant}', [WaveController::class, 'payerDirect'])->where('montant', '[0-9]+')->name('payer.direct');
+
+    // Service du widget JS
+    Route::get('/wave-payment-widget.js', [WaveController::class, 'wavePaymentWidget'])->name('widget');
+
+    Route::get('/factures/{identifiant}', [WaveController::class, 'facturesDirect'])
+        ->where('identifiant', '[A-Za-z0-9\-_]+')
+        ->name('factures.direct');
+});
 
 
+// Debug des URLs générées (à retirer en prod)
+Route::get('/_debug/wave-urls', function () {
+    return [
+        'app_url'     => config('app.url'),
+        'app_env'     => app()->environment(),
+        'success_url' => route('wave.retour.success', ['ref' => 'TEST']),
+        'error_url'   => route('wave.retour.error',   ['ref' => 'TEST']),
+    ];
+});
 
 
 

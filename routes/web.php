@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\ReceiptController;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Api\WaveController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -28,7 +30,6 @@ Route::get('storage/documents/{file}', function ($file) {
     $mimeType = mime_content_type($path);
 
     return Response::make($fileContents, 200, ['Content-Type' => $mimeType]);
-
 })->where('file', '.*');
 
 // Route::get('/test-pdf-simple', function() {
@@ -40,11 +41,29 @@ Route::get('storage/documents/{file}', function ($file) {
 //     }
 // });
 
-Route::get('/',[JekoPaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
+Route::get('/', [JekoPaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
 Route::get('/paiement/recu/{referenceInterne}', [ReceiptController::class, 'show'])->name('paiement.recu');
 Route::get('/recu/{referenceInterne}/pdf', [ReceiptController::class, 'downloadPDF'])->name('receipt.download.pdf');
+
+
+Route::get('/wave-demo', [WaveController::class, 'demoWaveWidget'])->name('demo-wave-widget');
+
+Route::prefix('wave')->name('wave.')->group(function () {
+    // Retours après paiement
+    Route::get('/paiements/retour/success', [WaveController::class, 'retourSuccess'])->name('retour.success');
+
+    Route::get('/paiements/retour/error', [WaveController::class, 'retourError'])->name('retour.error');
+
+    Route::get('/factures/{identifiant}', [WaveController::class, 'facturesPage'])
+        ->where('identifiant', '[A-Za-z0-9\-_]+')
+        ->name('factures.page');
+
+    // routes/web.php
+    Route::get('/payer/{identifiant}', [WaveController::class, 'payerPage'])
+        ->where('identifiant', '[A-Za-z0-9\-_]+')
+        ->name('payer.page');
+});
 
 // Route::get('/', function () {
 //     return view('welcome');
 // });
-

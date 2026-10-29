@@ -40,6 +40,13 @@ return [
         'webhook_secret' => env('JEKO_WEBHOOK_SECRET'),
     ],
 
+    'wave' => [
+        'api_key'        => env('WAVE_API_KEY'),
+        'base_url'       => env('WAVE_BASE_URL', 'https://api.wave.com'),
+        'currency'       => env('WAVE_CURRENCY', 'XOF'),
+        'webhook_secret' => env('WAVE_WEBHOOK_SECRET'),
+    ],
+
     'api' => [
         'encaissement_bis' => env('API_ENCAISSEMENT_BIS', 'https://api.yakoafricassur.com/oldweb/encaissement-bis'),
     ],

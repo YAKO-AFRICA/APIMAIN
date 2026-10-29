@@ -43,4 +43,8 @@ class TblPaiement extends Model
         'reponse_webhook'
 
     ];
+
+    protected $casts = [
+        'reponse_webhook' => 'array',
+    ];
 }

@@ -85,7 +85,7 @@ return [
             'handler_with' => [
                 'host' => env('PAPERTRAIL_URL'),
                 'port' => env('PAPERTRAIL_PORT'),
-                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
+                'connectionString' => 'tls://' . env('PAPERTRAIL_URL') . ':' . env('PAPERTRAIL_PORT'),
             ],
         ],
 
@@ -116,6 +116,16 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+        // ------------------------------------------------------------------
+        // Canal dédié : toutes les réponses brutes de Wave sont stockées ici.
+        // ------------------------------------------------------------------
+        'wave_webhooks' => [
+            'driver'               => 'daily',
+            'path'                 => storage_path('logs/wave-webhooks.log'),
+            'level'                => 'debug',
+            'days'                 => 30,
+            'replace_placeholders' => true,
         ],
     ],
 

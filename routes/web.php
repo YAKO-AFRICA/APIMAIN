@@ -1,6 +1,4 @@
 <?php
-
-use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\JekoPaymentController;
 use App\Http\Controllers\Api\ReceiptController;
 use Illuminate\Support\Facades\Response;
@@ -44,6 +42,12 @@ Route::get('storage/documents/{file}', function ($file) {
 Route::get('/', [JekoPaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
 Route::get('/paiement/recu/{referenceInterne}', [ReceiptController::class, 'show'])->name('paiement.recu');
 Route::get('/recu/{referenceInterne}/pdf', [ReceiptController::class, 'downloadPDF'])->name('receipt.download.pdf');
+Route::get('/paiement/regularisation-primes', function () {
+    return view('paiement.regularisation-primes');
+})->name('paiement.regularisation-primes');
+Route::get('/paiement/error', function () {
+    return view('paiement.jeko-error');
+})->name('paiement.error');
 
 
 Route::get('/wave-demo', [WaveController::class, 'demoWaveWidget'])->name('demo-wave-widget');

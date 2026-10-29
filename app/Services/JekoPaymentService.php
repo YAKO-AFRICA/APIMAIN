@@ -38,13 +38,13 @@ class JekoPaymentService
             'storeId' => $this->storeId,
             'amountCents' => $donnees['amountCents'],
             'currency' => $donnees['currency'] ?? 'XOF',
-            'reference' => $donnees['reference'],
+            'reference' => $referenceInterne,
             'paymentDetails' => [
                 'type' => 'redirect',
                 'data' => [
                     'paymentMethod' => $donnees['paymentMethod'],
-                    'successUrl' => $donnees['successUrl'] ,
-                    'errorUrl' => $donnees['errorUrl'],
+                    'successUrl' => $donnees['successUrl'] ?? null,
+                    'errorUrl' => $donnees['errorUrl'] ?? null,
                     'payerPhone' => $donnees['payerPhone'] ?? null,
                 ],
             ],
@@ -64,24 +64,27 @@ class JekoPaymentService
             $corpsRequete['metadata'] = $donnees['metadata'];
         }
 
+        Log::info('Initialisation du paiement Jeko', [
+            'reference' => $referenceInterne,
+            'currency' => $donnees['currency'] ?? 'XOF',
+            'payment_method' => $donnees['paymentMethod'],
+        ]);
+
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
             'X-API-KEY' => $this->apiKey,
             'X-API-KEY-ID' => $this->apiKeyId,
         ])
             ->timeout(15)
-            ->retry(3, 100, function ($exception) {
-                return $exception instanceof \Illuminate\Http\Client\ConnectionException;
-            })
+            ->retry(3, 100)
             ->post($this->baseUrl . '/partner_api/payment_requests', $corpsRequete);
 
         $data = $response->json();
 
         if (!$response->successful() || empty($data['redirectUrl'])) {
-            Log::warning('Échec initialisation paiement Jeko', [
+            Log::error('Échec initialisation paiement Jeko', [
+                'reference' => $referenceInterne,
                 'status' => $response->status(),
-                'response' => $data,
-                'request' => $corpsRequete,
             ]);
 
             return [
@@ -92,10 +95,15 @@ class JekoPaymentService
             ];
         }
 
+        Log::info('Paiement Jeko initialisé avec succès', [
+            'reference' => $referenceInterne,
+            'status' => $data['status'] ?? 'pending',
+        ]);
+
         return [
             'success' => true,
             'redirectUrl' => $data['redirectUrl'],
-            'paymentId' => $data['paymentId'] ?? null,
+            'paymentId' => $data['id'] ?? null,
             'status' => $data['status'] ?? 'pending',
             'code' => 'PAYMENT_INITIATED',
         ];
@@ -106,23 +114,54 @@ class JekoPaymentService
      */
     public function verifierStatut($paiement): array
     {
+        if (empty($paiement->payment_token)) {
+            Log::warning('Tentative de vérification de statut avec un token de paiement vide');
+
+            return [
+                'success' => false,
+                'code' => 'INVALID_PAYMENT_CODE',
+                'status' => $paiement->payment_status ?? 'unknown',
+                'message' => 'Token de paiement manquant ou invalide',
+                'details' => [],
+            ];
+        }
+
+        // Utiliser l'endpoint payment_requests pour obtenir le statut
         $response = Http::withHeaders([
             'X-API-KEY' => $this->apiKey,
             'X-API-KEY-ID' => $this->apiKeyId,
         ])
             ->timeout(10)
-            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->codePaiement);
+            ->retry(2, 100)
+            ->get($this->baseUrl . '/partner_api/payment_requests/' . $paiement->payment_token);
 
         if (!$response->successful()) {
+            Log::warning('Échec de la vérification du statut du paiement', [
+                'status' => $response->status(),
+            ]);
+
             return [
-                'status' => $paiement->statut,
-                'details' => ['error' => 'Unable to fetch status'],
+                'success' => false,
+                'code' => 'TRANSACTION_VERIFICATION_FAILED',
+                'status' => $paiement->payment_status ?? 'unknown',
+                'message' => 'Erreur lors de la vérification du statut du paiement',
+                'details' => [
+                    'http_status' => $response->status(),
+                    'payment_token' => $paiement->payment_token,
+                ],
             ];
         }
 
         $data = $response->json();
 
+        Log::info('Statut du paiement vérifié avec succès', [
+            'status' => $data['status'] ?? 'unknown',
+        ]);
+
         return [
+            'success' => true,
+            'code' => 'TRANSACTION_VERIFIED',
+            'message' => 'Statut du paiement vérifié',
             'status' => $data['status'] ?? 'unknown',
             'details' => $data,
         ];
@@ -134,10 +173,6 @@ class JekoPaymentService
 
     public function validerWebhook(Request $request): bool
     {
-        // Log tous les headers pour déboguer
-        // Log::info('Tous les headers reçus', [
-        //     'headers' => $request->headers->all()
-        // ]);
 
         // Essayer plusieurs noms de headers possibles
         $signature = $request->header('jeko-signature');
@@ -160,39 +195,46 @@ class JekoPaymentService
      */
     public function traiterWebhook(array $payload): ?array
     {
-        $reference = $payload['reference'] ?? null;
+        $reference = $payload['transactionDetails']['reference'] ?? null;
         $status = $payload['status'] ?? null;
 
         if (!$reference || !$status) {
+            Log::warning('Webhook Jeko avec données incomplètes');
             return null;
         }
 
-        // Mettre à jour la transaction
-        $paiement = TblPaiement::where('command_number', $reference)->first();
+        // $paiement = TblPaiement::where('command_number', $reference)->first();
+        $paiement = TblPaiement::where('codePaiement', $reference)
+            ->orWhere('command_number', $reference)->first();
 
         if (!$paiement) {
-            Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
+            Log::warning('Paiement non trouvé pour le webhook');
             return null;
         }
 
-        $ancienStatut = $paiement->statut;
-        $paiement->statut = $this->convertirStatut($status);
-        $paiement->reponse_webhook = array_merge(
-            $paiement->reponse_webhook ?? [],
-            ['webhook' => $payload, 'date_maj' => now()]
-        );
-        $paiement->save();
+        // Idempotency: si le paiement est déjà dans l'état final, ignorer le webhook
+        $targetStatus = $this->convertirStatut($status);
+        if ($paiement->payment_status === $targetStatus && in_array($targetStatus, ['success', 'cancelled', 'error'])) {
+            Log::info('Webhook ignoré - paiement déjà dans l\'état final', [
+                'reference' => $reference,
+                'current_status' => $paiement->payment_status,
+                'webhook_status' => $targetStatus,
+            ]);
+            return null;
+        }
 
-        Log::info('Transaction mise à jour via webhook', [
-            'reference' => $reference,
-            'ancien_statut' => $ancienStatut,
-            'nouveau_statut' => $paiement->statut,
-        ]);
+        // Extraire les informations du payload
+        $phone = null;
+        if (!empty($payload['counterpartIdentifier'])) {
+            $phone = preg_replace('/\D/', '', $payload['counterpartIdentifier']);
+            $phone = substr($phone, -10);
+        }
 
         return [
             'reference' => $reference,
-            'ancien_statut' => $ancienStatut,
-            'nouveau_statut' => $paiement->statut,
+            'status' => $targetStatus,
+            'phone' => $phone,
+            'amount' => ($payload['amount']['amount'] ?? null) / 100,
         ];
     }
 
@@ -295,14 +337,14 @@ class JekoPaymentService
     private function convertirStatut(string $status): string
     {
         $map = [
-            'pending' => 'en_attente',
-            'processing' => 'en_cours',
-            'completed' => 'termine',
-            'success' => 'reussi',
-            'failed' => 'echec',
-            'cancelled' => 'annule',
-            'refunded' => 'rembourse',
-            'error' => 'erreur',
+            'pending' => 'pending',
+            'processing' => 'pending',
+            'completed' => 'success',
+            'success' => 'success',
+            'failed' => 'error',
+            'cancelled' => 'cancelled',
+            'refunded' => 'cancelled',
+            'error' => 'error',
         ];
 
         return $map[strtolower($status)] ?? $status;

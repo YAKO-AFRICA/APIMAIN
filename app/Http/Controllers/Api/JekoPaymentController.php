@@ -138,8 +138,11 @@ class  JekoPaymentController extends Controller
      */
     public function initierPaiement(Request $request): JsonResponse
     {
+<<<<<<< HEAD
 
         Log::info('initierPaiement', $request->all());
+=======
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
         $validator = Validator::make($request->all(), [
             'reference' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
             'currency' => ['nullable', 'string', 'size:3', 'in:' . implode(',', self::DEVISES_SUPPORTEES)],
@@ -169,15 +172,17 @@ class  JekoPaymentController extends Controller
             if ($type === 'recoveryPrime' && !$request->filled('selectedInvoiceIds')) {
                 $v->errors()->add('selectedInvoiceIds', 'Veuillez sélectionner au moins une facture à régulariser.');
             }
-
         });
 
         if ($validator->fails()) {
+<<<<<<< HEAD
             // Log::warning('Validation du paiement échouée', [
             //     'errors' => $validator->errors(),
             //     'input' => $request->except(['metadata']),
             // ]);
 
+=======
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
             return response()->json([
                 'success' => false,
                 'message' => 'Données de paiement invalides.',
@@ -188,12 +193,17 @@ class  JekoPaymentController extends Controller
 
         $donnees = $validator->validated();
 
+<<<<<<< HEAD
         // Log::info('Données de paiement validées', $donnees);
 
         // 1) Calcul du montant et des lignes de factures — TOUJOURS côté serveur
+=======
+        Log::info('Initialisation de paiement', $donnees);
+
+        // 1) Calcul du montant et des lignes de factures
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
         try {
             $preparation = $this->orchestrator->preparer($donnees);
-            // Log::info('Données de la preparation', $preparation);
         } catch (\RuntimeException $e) {
             return response()->json([
                 'success' => false,
@@ -213,24 +223,27 @@ class  JekoPaymentController extends Controller
         }
 
         $referenceInterne = $donnees['reference'];
+<<<<<<< HEAD
         // $referenceInterne = 'PAI-' . date('Ymd') . date('His'). '-'. rand(1, 9999);
+=======
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
 
         try {
-            // 2) Appel Jeko avec le montant recalculé (convention "amountCents" = XOF * 100)
+            // 2) Appel Jeko
             $resultat = $this->jekoService->initialiserPaiement([
                 'amountCents' => $preparation['montantTotal'] * 100,
                 'currency' => $donnees['currency'] ?? 'XOF',
-                'reference' => $donnees['reference'],
+                'reference' => $referenceInterne,
                 'paymentMethod' => $donnees['paymentMethod'],
-                'successUrl' => route('paiement.recu', ['referenceInterne' => $referenceInterne]),
-                // 'successUrl' => $donnees['successUrl'] ?? null,
-                'errorUrl' => $donnees['errorUrl'] ?? null,
+                'successUrl' => (isset($donnees['successUrl']) && !empty($donnees['successUrl'])) ? $donnees['successUrl'] : env('APP_URL') . '/paiement/recu/' . $referenceInterne,
+                'errorUrl' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error',
                 'customerEmail' => $donnees['customerEmail'] ?? null,
                 'customerName' => $donnees['customerName'] ?? null,
                 'description' => $donnees['description'] ?? null,
                 'metadata' => $donnees['metadata'] ?? null,
             ], $referenceInterne);
 
+<<<<<<< HEAD
             // Log::info('Initialisation paiement Jeko', [
             //     'reference_interne' => $referenceInterne,
             //     'paymentType' => $donnees['paymentType'],
@@ -245,6 +258,13 @@ class  JekoPaymentController extends Controller
                 //     'erreur' => $resultat['message'] ?? 'Erreur inconnue',
                 // ]);
 
+=======
+            Log::info('Paiement initialisé via Jeko', [
+                'reference' => $referenceInterne,
+            ]);
+
+            if (!$resultat['success']) {
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
                 return response()->json([
                     'success' => false,
                     'message' => $resultat['message'] ?? "Impossible d'initialiser le paiement.",
@@ -253,8 +273,36 @@ class  JekoPaymentController extends Controller
                 ], $resultat['status'] ?? 502);
             }
 
+<<<<<<< HEAD
             // 3) Enregistrement tblpaiement + tblfacture (colonnes réelles du schéma)
             $paiement = $this->orchestrator->enregistrer($donnees, $preparation, $referenceInterne, $resultat);
+=======
+            Log::info('Enregistrement du paiement', [
+                'referenceInterne' => $referenceInterne,
+            ]);
+
+            // 3) Enregistrement du paiement et des factures
+            try {
+                $paiement = $this->orchestrator->enregistrer($donnees, $preparation, $referenceInterne, $resultat);
+
+                Log::info('Paiement enregistré', [
+                    'referenceInterne' => $referenceInterne,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Erreur lors de l\'enregistrement du paiement dans le contrôleur', [
+                    'referenceInterne' => $referenceInterne,
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de l\'enregistrement du paiement: ' . $e->getMessage(),
+                    'code' => 'PAYMENT_REGISTRATION_FAILED',
+                    'data' => null,
+                ], 500);
+            }
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
 
             return response()->json([
                 'success' => true,
@@ -271,10 +319,8 @@ class  JekoPaymentController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::error('Erreur critique appel API Jeko', [
-                'reference' => $donnees['reference'] ?? 'inconnue',
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error('Erreur lors de l\'initialisation du paiement', [
+                'referenceInterne' => $referenceInterne,
             ]);
 
             return response()->json([
@@ -292,7 +338,12 @@ class  JekoPaymentController extends Controller
     public function verifierStatut(Request $request, string $referenceInterne): JsonResponse
     {
         try {
+<<<<<<< HEAD
             $paiement = TblPaiement::where('command_number', $referenceInterne)->first();
+=======
+            $paiement = TblPaiement::where('codePaiement', $referenceInterne)
+            ->orWhere('command_number', $referenceInterne)->first();
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
 
             if (!$paiement) {
                 return response()->json([
@@ -304,6 +355,17 @@ class  JekoPaymentController extends Controller
 
             $statut = $this->jekoService->verifierStatut($paiement);
 
+<<<<<<< HEAD
+=======
+            // Si le statut est "error", mettre à jour le statut en base
+            if ($statut['success'] && $statut['status'] === 'error') {
+                $this->orchestrator->mettreAJourStatut($paiement, 'error', []);
+                Log::info('Statut du paiement mis à jour en base (error)', [
+                    'reference' => $referenceInterne,
+                ]);
+            }
+
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -335,14 +397,22 @@ class  JekoPaymentController extends Controller
     public function webhook(Request $request)
     {
         $payload = $request->all();
+<<<<<<< HEAD
         Log::info('Webhook Jeko reçu', ['payload' => $payload]);
+=======
+        Log::info('Webhook Jeko reçu', [
+            'payload' => $payload,
+        ]);
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
 
         try {
+            // Valider le webhook
             if (!$this->jekoService->validerWebhook($request)) {
-                Log::warning('Webhook Jeko non valide', ['payload' => $payload]);
+                Log::warning('Webhook Jeko non valide - signature incorrecte');
                 return response()->json(['error' => 'Invalid webhook'], 401);
             }
 
+<<<<<<< HEAD
             $reference = $payload['transactionDetails']['reference'] ?? null;
             // $referenceInterne = $payload['reference'] ?? null;
             $statutJeko = $payload['status'] ?? null;
@@ -352,11 +422,25 @@ class  JekoPaymentController extends Controller
             }
 
             $paiement = TblPaiement::where('command_number', $reference)->first();
+=======
+            // Traiter le webhook
+            $resultat = $this->jekoService->traiterWebhook($payload);
 
-            if (!$paiement) {
-                Log::warning('Transaction non trouvée pour le webhook', ['reference' => $reference]);
+            if (!$resultat) {
+                Log::info('Webhook ignoré - traitement non nécessaire');
                 return response()->json(['status' => 'ignored'], 200);
             }
+
+            // Mettre à jour le paiement
+            $paiement = TblPaiement::where('codePaiement', $resultat['reference'])
+            ->orWhere('command_number', $resultat['reference'])->first();
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
+
+            if (!$paiement) {
+                Log::warning('Paiement non trouvé pour le webhook', ['reference' => $resultat['reference']]);
+                return response()->json(['status' => 'ignored'], 200);
+            }
+<<<<<<< HEAD
 
             // $nouvelEtat = $this->mapperStatutVersEtat($statutJeko);
             // $ancienEtat = $paiement->etat;
@@ -376,12 +460,35 @@ class  JekoPaymentController extends Controller
             $paiement->payment_validation_date = Carbon::now()->format('Y-m-d H:i:s');
             $paiement->reponse_webhook = array_merge($paiement->reponse_webhook ?? [], ['webhook' => $payload, 'date_maj' => now()]);
             $paiement->save();
+=======
 
-            Log::info('Transaction mise à jour via webhook', [
-                'reference' => $reference,
-                'paiement' => $paiement
+            Log::info('Mise à jour du paiement via webhook', [
+                'reference' => $resultat['reference'],
+                'nouveau_statut' => $resultat['status'],
+            ]);
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
+
+            // Mettre à jour le statut via l'orchestrateur
+            $this->orchestrator->mettreAJourStatut(
+                $paiement,
+                $resultat['status'],
+                [
+                    'phone' => $resultat['phone'],
+                    'amount' => $resultat['amount'],
+                ]
+            );
+
+            // Si le paiement est réussi, générer le reçu
+            if ($resultat['status'] === 'success') {
+                $this->generateReceipt($paiement->codePaiement, $paiement->typeReglement);
+            }
+
+            Log::info('Webhook traité avec succès', [
+                'reference' => $resultat['reference'],
+                'statut' => $resultat['status'],
             ]);
 
+<<<<<<< HEAD
             // Propage le statut aux factures liées (même codePaiement)
             TblFacture::where('codePaiement', $paiement->command_number)->update([
                 'etat' => 2,
@@ -397,11 +504,12 @@ class  JekoPaymentController extends Controller
                 // 'nouvel_etat' => $nouvelEtat,
             ]);
 
+=======
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
             return response()->json(['status' => 'success'], 200);
         } catch (\Throwable $e) {
             Log::error('Erreur traitement webhook Jeko', [
                 'message' => $e->getMessage(),
-                'payload' => $payload,
             ]);
 
             return response()->json(['error' => 'Webhook processing failed'], 500);
@@ -411,19 +519,27 @@ class  JekoPaymentController extends Controller
     private function generateReceipt(string $codePaiement, string $typeReglement)
     {
         try {
-            $externalUploadDir = base_path(env('UPLOADS_PATH'));
-            if (!is_dir($externalUploadDir)) {
-                mkdir($externalUploadDir, 0777, true);
-            }
-
             $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
+<<<<<<< HEAD
             $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
+=======
+
+            Log::info('Génération du reçu PDF', [
+                'reference' => $paiement->command_number,
+            ]);
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
 
             $libellesTypeFacture = [
                 'N' => 'Prime principale',
-                'F' => 'Frais d\'adhésion',
+                'F' => "Frais d'adhésion",
+                'P' => 'Partielle (Reste à payer)',
+                'U' => 'Unique',
+                'B' => 'Participation aux Bénéfices',
+                'E' => 'Exceptionnelle',
+                'A' => 'Avance (Remboursement de prêts)',
             ];
 
+            // Libellés des types de paiement
             $libellesType = [
                 'firstPayment' => 'Premier paiement',
                 'earlyPayment' => 'Paiement anticipé',
@@ -457,18 +573,23 @@ class  JekoPaymentController extends Controller
             $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
 
-            $identifiantContrat = ($paiement->typeReglement === 'firstPayment') ? $paiement->idContrat : $paiement->idproposition;
-
+            $identifiantContrat = $paiement->idContrat ?? $paiement->idproposition;
             $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
+<<<<<<< HEAD
             $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
 
             // Sauvegarder le PDF
             file_put_contents($filePath, $dompdf->output());
 
             Log::info('PDF généré avec succès pour : ' . $codePaiement);
+=======
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
 
-            if ($typeReglement === 'firstPayment') {
+            // Créer un fichier temporaire
+            $tempPath = tempnam(sys_get_temp_dir(), 'pdf_');
+            file_put_contents($tempPath, $dompdf->output());
 
+<<<<<<< HEAD
                 // Ajoute le reçu au contrat
                 TblDocument::create([
                     'codecontrat' => $paiement->idContrat,
@@ -481,17 +602,74 @@ class  JekoPaymentController extends Controller
 
                 // Mettre le contrat en statut "payé"
                 $contrat->update(['estpaye' => 1]);
+=======
+            Log::info('PDF généré avec succès', [
+                'file_name' => $fileName,
+            ]);
+
+            if ($paiement->typeReglement === 'firstPayment') {
+                $contrat = Contrat::where('id', $identifiantContrat)->first();
+
+                if ($contrat) {
+                    // Créer un UploadedFile à partir du fichier temporaire
+                    $uploadedFile = new \Illuminate\Http\UploadedFile(
+                        $tempPath,
+                        $fileName,
+                        'application/pdf',
+                        null,
+                        true
+                    );
+
+                    // Sauvegarder le fichier dans le dossier d'upload
+                    $externalUploadDir = base_path(env('UPLOADS_PATH'));
+                    if (!is_dir($externalUploadDir)) {
+                        mkdir($externalUploadDir, 0777, true);
+                    }
+
+                    $finalPath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
+                    file_put_contents($finalPath, file_get_contents($tempPath));
+
+                    // Créer l'entrée dans tbldocuments
+                    TblDocument::create([
+                        'codecontrat' => $contrat->id,
+                        'filename' => $fileName,
+                        'libelle' => 'Recu de paiement',
+                        'saisiele' => now(),
+                        'saisiepar' => $contrat->saisiepar ?? null,
+                        'source' => 'ES',
+                    ]);
+
+                    // Mettre le contrat en statut "payé"
+                    $oldIsPaid = (bool) $contrat->estpaye;
+                    $contrat->update(['estpaye' => 1]);
+
+                    Log::info('Contrat marqué comme payé', [
+                        'contrat_id' => $contrat->id,
+                        'old_is_paid' => $oldIsPaid,
+                    ]);
+                }
+            }
+
+            // Supprimer le fichier temporaire
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
             }
 
             return [
                 'status' => 'success',
                 'file_name' => $fileName,
-                'file_path' => $filePath,
             ];
 
         } catch (\Exception $e) {
+<<<<<<< HEAD
             Log::error('Erreur génération PDF : ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
+=======
+            Log::error('Erreur génération PDF', [
+                'message' => $e->getMessage(),
+            ]);
+>>>>>>> 492a4f44264db1d80930cd8597eb72b1c9e402ff
 
             return [
                 'status' => 'error',

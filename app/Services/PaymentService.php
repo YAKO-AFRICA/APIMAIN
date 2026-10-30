@@ -406,33 +406,20 @@ class PaymentService
      */
     public function validerWebhookWave(string $rawBody, string $signatureHeader): bool
     {
-        // TEMPORAIRE : Désactiver la validation de signature Wave
-        // Une fois le WAVE_WEBHOOK_SECRET configuré dans .env, retirer ce return
         $secret = $this->waveWebhookSecret;
         
-        Log::channel('wave_webhooks')->warning('Validation signature Wave - START', [
-            'secret_set' => !empty($secret),
-            'secret_length' => strlen($secret),
-            'signature_header' => $signatureHeader,
-        ]);
-        
-        // TEMPORAIRE : Désactiver la validation pour les tests
-        // À retirer une fois le secret configuré
+        // Si le secret n'est pas configuré, accepter le webhook (pour les tests)
         if (empty($secret)) {
             Log::channel('wave_webhooks')->warning('Webhook Wave : validation désactivée (secret non configuré)');
             return true;
         }
         
-        // if (empty($signatureHeader) || $secret === '') {
-        //     Log::channel('wave_webhooks')->warning('Webhook Wave : signature ou secret manquant', [
-        //         'signature_header' => $signatureHeader,
-        //         'secret_set' => !empty($secret),
-        //     ]);
-        //     return false;
-        // }
-        return true;
-        
+        if (empty($signatureHeader)) {
+            Log::channel('wave_webhooks')->warning('Webhook Wave : signature manquante');
+            return false;
+        }
 
+        // Parser le header: t=timestamp,v1=signature
         $parts = [];
         foreach (explode(',', $signatureHeader) as $part) {
             $kv = explode('=', trim($part), 2);
@@ -443,13 +430,6 @@ class PaymentService
 
         $timestamp = (int) ($parts['t'] ?? 0);
         $signature = $parts['v1'] ?? '';
-
-        Log::channel('wave_webhooks')->warning('Détails signature Wave', [
-            'timestamp' => $timestamp,
-            'signature' => substr($signature, 0, 20) . '...',
-            'current_time' => time(),
-            'time_diff' => time() - $timestamp,
-        ]);
 
         if ($timestamp <= 0 || $signature === '') {
             Log::channel('wave_webhooks')->warning('Webhook Wave : timestamp ou signature invalide', [
@@ -469,19 +449,20 @@ class PaymentService
             return false;
         }
 
-        $expected = hash_hmac(
-            'sha256',
-            $timestamp . '.' . $rawBody,
-            $secret
-        );
+        // Calculer la signature attendue
+        // Format selon la documentation Wave: HMAC-SHA256(timestamp.raw_body)
+        $payload = $timestamp . '.' . $rawBody;
+        $expected = hash_hmac('sha256', $payload, $secret);
 
+        // Comparaison sécurisée (timing-safe)
         $isValid = hash_equals($expected, $signature);
         
-        Log::channel('wave_webhooks')->warning('Résultat signature Wave', [
-            'expected' => substr($expected, 0, 20) . '...',
-            'received' => substr($signature, 0, 20) . '...',
-            'valid' => $isValid,
-        ]);
+        if (!$isValid) {
+            Log::channel('wave_webhooks')->warning('Webhook Wave : signature invalide', [
+                'expected' => substr($expected, 0, 20) . '...',
+                'received' => substr($signature, 0, 20) . '...',
+            ]);
+        }
 
         return $isValid;
     }

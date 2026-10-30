@@ -52,17 +52,19 @@ class ReceiptController extends Controller
 
         // Identifiant du contrat
         $identifiantContrat = $paiement->idContrat ?? $paiement->idproposition ?? '';
+        $identifiantContrat = $paiement->idContrat ?? $paiement->idproposition;
+        $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
 
-        $contrat = Contrat::where('id', $identifiantContrat)->first();
+        // $contrat = Contrat::where('id', $identifiantContrat)->first();
 
         // Récupérer le reçu de paiement du contrat dans la table tbldocuments
-        $fileName = null;
-        if ($contrat) {
-            $recuPaiement = TblDocument::where('codecontrat', $contrat->id)
-                ->where('filename', 'like', '%' . $paiement->codePaiement . '%')
-                ->first();
-            $fileName = $recuPaiement->filename ?? null;
-        }
+        // $fileName = null;
+        // if ($contrat) {
+        //     $recuPaiement = TblDocument::where('codecontrat', $contrat->id)
+        //         ->where('filename', 'like', '%' . $paiement->codePaiement . '%')
+        //         ->first();
+        //     $fileName = $recuPaiement->filename ?? null;
+        // }
 
         Log::info('Affichage reçu', [
             'codePaiement' => $paiement->codePaiement,

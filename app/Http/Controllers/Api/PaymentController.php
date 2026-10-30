@@ -400,9 +400,12 @@ class PaymentController extends Controller
             'timestamp' => now()->toIso8601String(),
         ]);
 
+        $validerSignature = $this->paymentService->validerWebhookWave($rawBody, $signature);
+
         // 2. Vérification de signature
-        if (!$this->paymentService->validerWebhookWave($rawBody, $signature)) {
+        if (!$validerSignature) {
             Log::channel('wave_webhooks')->warning('Webhook Wave : signature invalide', [
+                'validerSignature' => $validerSignature,
                 'ip' => $request->ip(),
             ]);
             return response()->json(['error' => 'Invalid signature'], 401);

@@ -408,7 +408,7 @@ class PaymentService
     {
         $secret = $this->waveWebhookSecret;
         
-        Log::info('Validation signature Wave', [
+        Log::warning('Validation signature Wave - START', [
             'secret_set' => !empty($secret),
             'secret_length' => strlen($secret),
             'signature_header' => $signatureHeader,
@@ -440,7 +440,7 @@ class PaymentService
         $timestamp = (int) ($parts['t'] ?? 0);
         $signature = $parts['v1'] ?? '';
 
-        Log::info('Détails signature Wave', [
+        Log::warning('Détails signature Wave', [
             'timestamp' => $timestamp,
             'signature' => substr($signature, 0, 20) . '...',
             'current_time' => time(),
@@ -473,7 +473,7 @@ class PaymentService
 
         $isValid = hash_equals($expected, $signature);
         
-        Log::info('Résultat signature Wave', [
+        Log::warning('Résultat signature Wave', [
             'expected' => substr($expected, 0, 20) . '...',
             'received' => substr($signature, 0, 20) . '...',
             'valid' => $isValid,

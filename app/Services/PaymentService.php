@@ -410,6 +410,7 @@ class PaymentService
         
         Log::info('Validation signature Wave', [
             'secret_set' => !empty($secret),
+            'secret_length' => strlen($secret),
             'signature_header' => $signatureHeader,
         ]);
         
@@ -439,12 +440,28 @@ class PaymentService
         $timestamp = (int) ($parts['t'] ?? 0);
         $signature = $parts['v1'] ?? '';
 
+        Log::info('Détails signature Wave', [
+            'timestamp' => $timestamp,
+            'signature' => substr($signature, 0, 20) . '...',
+            'current_time' => time(),
+            'time_diff' => time() - $timestamp,
+        ]);
+
         if ($timestamp <= 0 || $signature === '') {
+            Log::warning('Webhook Wave : timestamp ou signature invalide', [
+                'timestamp' => $timestamp,
+                'signature_empty' => $signature === '',
+            ]);
             return false;
         }
 
         // Fenêtre anti-replay de 5 minutes
         if (abs(time() - $timestamp) > 300) {
+            Log::warning('Webhook Wave : timestamp hors fenêtre', [
+                'timestamp' => $timestamp,
+                'current_time' => time(),
+                'diff' => abs(time() - $timestamp),
+            ]);
             return false;
         }
 
@@ -454,7 +471,15 @@ class PaymentService
             $secret
         );
 
-        return hash_equals($expected, $signature);
+        $isValid = hash_equals($expected, $signature);
+        
+        Log::info('Résultat signature Wave', [
+            'expected' => substr($expected, 0, 20) . '...',
+            'received' => substr($signature, 0, 20) . '...',
+            'valid' => $isValid,
+        ]);
+
+        return $isValid;
     }
 
     // /**

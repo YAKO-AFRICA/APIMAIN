@@ -450,21 +450,42 @@ class PaymentService
         }
 
         // Calculer la signature attendue
-        // Format selon la documentation Wave: HMAC-SHA256(timestamp.raw_body)
-        $payload = $timestamp . '.' . $rawBody;
-        $expected = hash_hmac('sha256', $payload, $secret);
-
-        // Comparaison sécurisée (timing-safe)
-        $isValid = hash_equals($expected, $signature);
+        // Essayer le format: HMAC-SHA256(timestamp.raw_body)
+        $payload1 = $timestamp . '.' . $rawBody;
+        $expected1 = hash_hmac('sha256', $payload1, $secret);
         
-        if (!$isValid) {
-            Log::channel('wave_webhooks')->warning('Webhook Wave : signature invalide', [
-                'expected' => substr($expected, 0, 20) . '...',
-                'received' => substr($signature, 0, 20) . '...',
-            ]);
-        }
+        // Essayer aussi le format: HMAC-SHA256(raw_body)
+        $expected2 = hash_hmac('sha256', $rawBody, $secret);
+        
+        Log::channel('wave_webhooks')->warning('Débogage signature Wave', [
+            'timestamp' => $timestamp,
+            'raw_body_length' => strlen($rawBody),
+            'raw_body_preview' => substr($rawBody, 0, 100),
+            'payload1_length' => strlen($payload1),
+            'expected1' => substr($expected1, 0, 20) . '...',
+            'expected2' => substr($expected2, 0, 20) . '...',
+            'received' => substr($signature, 0, 20) . '...',
+            'match1' => hash_equals($expected1, $signature),
+            'match2' => hash_equals($expected2, $signature),
+        ]);
 
-        return $isValid;
+        // Utiliser le format qui correspond
+        if (hash_equals($expected1, $signature)) {
+            return true;
+        }
+        
+        if (hash_equals($expected2, $signature)) {
+            Log::channel('wave_webhooks')->info('Signature Wave validée avec format raw_body uniquement');
+            return true;
+        }
+        
+        Log::channel('wave_webhooks')->warning('Webhook Wave : signature invalide', [
+            'expected1' => substr($expected1, 0, 20) . '...',
+            'expected2' => substr($expected2, 0, 20) . '...',
+            'received' => substr($signature, 0, 20) . '...',
+        ]);
+
+        return false;
     }
 
     // /**

@@ -63,8 +63,8 @@ class PaymentService
             'amount' => (string) $donnees['amountCents'],
             'currency' => $donnees['currency'],
             'client_reference' => $referenceInterne,
-            'successUrl' => (isset($donnees['successUrl']) && !empty($donnees['successUrl'])) ? $donnees['successUrl'] : env('APP_URL') . '/paiement/recu/' . $referenceInterne,
-            'errorUrl' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error',
+            'success_url' => (isset($donnees['successUrl']) && !empty($donnees['successUrl'])) ? $donnees['successUrl'] : env('APP_URL') . '/paiement/recu/' . $referenceInterne,
+            'error_url' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error',
         ];
 
         $response = Http::withToken($this->waveApiKey)

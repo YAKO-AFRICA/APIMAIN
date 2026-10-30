@@ -229,6 +229,7 @@ class PrimePaymentOrchestrator
                 $updateData['payment_validation_date'] = Carbon::now()->format('Y-m-d H:i:s');
                 $updateData['paid_amount'] = $payload['amount'];
                 $updateData['paid_sum'] = $payload['amount'];
+                $updateData['reponse_webhook'] = array_merge($paiement->reponse_webhook ?? [], $payload['reponse_webhook']);
 
                 if (!empty($payload['phone'])) {
                     $updateData['telpaiement'] = $payload['phone'];

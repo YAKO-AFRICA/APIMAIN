@@ -348,6 +348,8 @@ class PaymentController extends Controller
                     'phone' => $resultat['phone'],
                     'amount' => $resultat['amount'],
                     'paymentMethod' => $resultat['paymentMethod'] ?? null,
+                    'reponse_webhook' => ['webhook' => $payload, 'date_maj' => now()],
+
                 ]
             );
 
@@ -460,6 +462,7 @@ class PaymentController extends Controller
                     'phone' => null,
                     'amount' => $amount,
                     'transactionId' => $transactionId,
+                    'reponse_webhook' => ['webhook' => $event, 'date_maj' => now()],
                 ]
             );
 

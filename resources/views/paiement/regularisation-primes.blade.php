@@ -281,7 +281,7 @@
         </div>
 
         <div class="footer">
-            Paiement sécurisé via Jeko
+            Paiement sécurisé via notre partenaire de paiement. Vos informations sont protégées.
         </div>
     </div>
 
@@ -292,9 +292,9 @@
 
         const BASE_URL = window.location.origin;
         const API_URLS = {
-            widgetJs: BASE_URL + '/api/paiements/jeko/jeko-payment-widget.js',
-            init: BASE_URL + '/api/paiements/jeko/init',
-            contractCheck: BASE_URL + '/api/paiements/jeko/contrat/verifier',
+            widgetJs: BASE_URL + '/api/paiements/jeko-payment-widget.js',
+            init: BASE_URL + '/api/paiements/init',
+            contractCheck: BASE_URL + '/api/paiements/contrat/verifier',
         };
 
         // Stocker les factures et les montants
@@ -511,7 +511,7 @@
                     widget = new JekoWidget({
                         backendEndpoint: API_URLS.init,
                         contractCheckEndpoint: API_URLS.contractCheck,
-                        statusCheckEndpoint: BASE_URL + '/api/paiements/jeko/statut',
+                        statusCheckEndpoint: BASE_URL + '/api/paiements/statut',
 
                         currency: "XOF",
                         timeout: 30000,

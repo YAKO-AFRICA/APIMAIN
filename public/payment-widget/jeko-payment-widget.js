@@ -16,7 +16,7 @@
 //  * <script src="jeko-widget.js"></script>
 //  * <script>
 //  *   const widget = new JekoWidget({
-//  *     backendEndpoint: '/api/paiements/jeko/init',
+//  *     backendEndpoint: '/api/paiements/init',
 //  *     currency: 'XOF',
 //  *   });
 //  *
@@ -107,9 +107,9 @@
     };
 
     const DEFAULT_OPTIONS = {
-        backendEndpoint: "/api/paiements/jeko/init",
-        contractCheckEndpoint: "/api/paiements/jeko/contrat/verifier",
-        statusCheckEndpoint: "/api/paiements/jeko/statut",
+        backendEndpoint: "/api/paiements/init",
+        contractCheckEndpoint: "/api/paiements/contrat/verifier",
+        statusCheckEndpoint: "/api/paiements/statut",
         currency: "XOF",
         successUrl: null,
         errorUrl: null,
@@ -1676,7 +1676,7 @@
                             this.options.callbacks.onSuccess(null, data);
                         }
                         setTimeout(() => this.close(), 3000);
-                    } else if (status === "error") {
+                    } else if (status === "error" || status === "failed" || status === "canceled") {
                         // Paiement échoué - mettre à jour le statut en base
                         this._clearStatusPoll();
                         this._renderResultState(

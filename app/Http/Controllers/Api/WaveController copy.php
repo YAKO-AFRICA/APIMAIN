@@ -148,7 +148,7 @@ class WaveController extends Controller
 
     public function initierPaiement(Request $request): JsonResponse
     {
-        log::info($request->all());
+        // log::info($request->all());
 
 
         $validator = Validator::make($request->all(), [
@@ -284,7 +284,6 @@ class WaveController extends Controller
             $paiement = $this->orchestrator->enregistrer($donnees, $preparation, $referenceInterne, $resultat, 'WAVE_API');
 
 
-            // $launchUrl = $waveOrder->wave_response['wave_launch_url'] ?? null;
             $launchUrl = $resultat['redirectUrl'] ?? null;
 
             Log::warning('Donnée initialisation paiement Wave', [
@@ -302,15 +301,6 @@ class WaveController extends Controller
                 ], 502);
             }
 
-            // $waveOrder->update([
-            //     'payment_type'        => $donnees['paymentType'],
-            //     'contract_id'         => $donnees['contractId'] ?? null,
-            //     'number_of_primes'    => $donnees['numberOfPrimes'] ?? null,
-            //     'selected_invoices'   => $donnees['selectedInvoiceIds'] ?? null,
-            //     'preparation_context' => array_merge($preparation, [
-            //         'amount_client' => $donnees['amount'] ?? null,
-            //     ]),
-            // ]);
 
             Log::info('Paiement Wave initialisé', [
                 'reference_interne' => $referenceInterne,

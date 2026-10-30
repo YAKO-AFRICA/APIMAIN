@@ -1,10 +1,9 @@
 <?php
-use App\Http\Controllers\Api\JekoPaymentController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\WaveController;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Api\WaveController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +38,7 @@ Route::get('storage/documents/{file}', function ($file) {
 //     }
 // });
 
-Route::get('/', [JekoPaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
+Route::get('/', [PaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
 Route::get('/paiement/recu/{referenceInterne}', [ReceiptController::class, 'show'])->name('paiement.recu');
 Route::get('/recu/{referenceInterne}/pdf', [ReceiptController::class, 'downloadPDF'])->name('receipt.download.pdf');
 Route::get('/paiement/regularisation-primes', function () {

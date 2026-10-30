@@ -242,19 +242,20 @@ class JekoPaymentService
     public function generateReceipt(string $codePaiement, string $typeReglement)
     {
         try {
-            $externalUploadDir = base_path(env('UPLOADS_PATH'));
-            if (!is_dir($externalUploadDir)) {
-                mkdir($externalUploadDir, 0777, true);
-            }
-
             $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
-            $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
+            // $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
 
             $libellesTypeFacture = [
                 'N' => 'Prime principale',
-                'F' => 'Frais d\'adhésion',
+                'F' => "Frais d'adhésion",
+                'P' => 'Partielle (Reste à payer)',
+                'U' => 'Unique',
+                'B' => 'Participation aux Bénéfices',
+                'E' => 'Exceptionnelle',
+                'A' => 'Avance (Remboursement de prêts)',
             ];
 
+            // Libellés des types de paiement
             $libellesType = [
                 'firstPayment' => 'Premier paiement',
                 'earlyPayment' => 'Paiement anticipé',
@@ -288,48 +289,174 @@ class JekoPaymentService
             $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
 
-            $identifiantContrat = ($paiement->typeReglement === 'firstPayment') ? $paiement->idContrat : $paiement->idproposition;
-
+            $identifiantContrat = $paiement->idContrat ?? $paiement->idproposition;
             $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
-            $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
 
-            // Sauvegarder le PDF
-            file_put_contents($filePath, $dompdf->output());
+            // Créer un fichier temporaire
+            $tempPath = tempnam(sys_get_temp_dir(), 'pdf_');
+            file_put_contents($tempPath, $dompdf->output());
 
-            Log::info('PDF généré avec succès pour : ' . $codePaiement);
+            Log::info('PDF généré avec succès', [
+                'file_name' => $fileName,
+            ]);
 
-            if ($typeReglement === 'firstPayment') {
+            if ($paiement->typeReglement === 'firstPayment') {
+                $contrat = Contrat::where('id', $identifiantContrat)->first();
 
-                // Ajoute le reçu au contrat
-                TblDocument::create([
-                    'codecontrat' => $paiement->idContrat,
-                    'filename' => $fileName,
-                    'libelle' => 'Recu de paiement',
-                    'saisiele' => now(),
-                    'saisiepar' => $contrat->saisiepar ?? null,
-                    'source' => "ES",
-                ]);
+                if ($contrat) {
+                    // Créer un UploadedFile à partir du fichier temporaire
+                    $uploadedFile = new \Illuminate\Http\UploadedFile(
+                        $tempPath,
+                        $fileName,
+                        'application/pdf',
+                        null,
+                        true
+                    );
 
-                // Mettre le contrat en statut "payé"
-                $contrat->update(['estpaye' => 1]);
+                    // Sauvegarder le fichier dans le dossier d'upload
+                    $externalUploadDir = base_path(env('UPLOADS_PATH'));
+                    if (!is_dir($externalUploadDir)) {
+                        mkdir($externalUploadDir, 0777, true);
+                    }
+
+                    $finalPath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
+                    file_put_contents($finalPath, file_get_contents($tempPath));
+
+                    // Créer l'entrée dans tbldocuments
+                    TblDocument::create([
+                        'codecontrat' => $contrat->id,
+                        'filename' => $fileName,
+                        'libelle' => 'Recu de paiement',
+                        'saisiele' => now(),
+                        'saisiepar' => $contrat->saisiepar ?? null,
+                        'source' => 'ES',
+                    ]);
+
+                    // Mettre le contrat en statut "payé"
+                    $oldIsPaid = (bool) $contrat->estpaye;
+                    $contrat->update(['estpaye' => 1]);
+
+                    Log::info('Contrat marqué comme payé', [
+                        'contrat_id' => $contrat->id,
+                        'old_is_paid' => $oldIsPaid,
+                    ]);
+                }
+            }
+
+            // Supprimer le fichier temporaire
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
             }
 
             return [
                 'status' => 'success',
+                'message' => 'PDF généré avec succès',
                 'file_name' => $fileName,
-                'file_path' => $filePath,
             ];
 
         } catch (\Exception $e) {
-            Log::error('Erreur génération PDF : ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Erreur génération PDF', [
+                'message' => $e->getMessage(),
+            ]);
 
             return [
                 'status' => 'error',
-                'message' => 'Erreur lors de la génération du PDF : ' . $e->getMessage()
+                'message' => 'Erreur lors de la génération du PDF : ' . $e->getMessage(),
+                'file_name' => null,
             ];
         }
     }
+    // public function generateReceipt(string $codePaiement, string $typeReglement)
+    // {
+    //     try {
+    //         $externalUploadDir = base_path(env('UPLOADS_PATH'));
+    //         if (!is_dir($externalUploadDir)) {
+    //             mkdir($externalUploadDir, 0777, true);
+    //         }
+
+    //         $paiement = TblPaiement::where('codePaiement', $codePaiement)->firstOrFail();
+    //         $contrat = Contrat::where('id', $paiement->idContrat)->firstOrFail();
+
+    //         $libellesTypeFacture = [
+    //             'N' => 'Prime principale',
+    //             'F' => 'Frais d\'adhésion',
+    //         ];
+
+    //         $libellesType = [
+    //             'firstPayment' => 'Premier paiement',
+    //             'earlyPayment' => 'Paiement anticipé',
+    //             'recoveryPrime' => 'Régularisation de primes',
+    //         ];
+
+    //         $libelleType = $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement;
+
+    //         $factures = TblFacture::where('codePaiement', $codePaiement)
+    //             ->orderBy('dateAjout')
+    //             ->get()
+    //             ->map(function ($facture) use ($libellesTypeFacture) {
+    //                 $facture->libelleTypeFacture =
+    //                     $libellesTypeFacture[$facture->typeFacture]
+    //                     ?? $facture->typeFacture;
+    //                 return $facture;
+    //             });
+
+    //         // Charger la vue et générer le HTML
+    //         $html = view('paiement.recu_pdf', compact('paiement', 'factures', 'libelleType'))->render();
+
+    //         // Configurer DomPDF
+    //         $options = new Options();
+    //         $options->set('defaultFont', 'DejaVu Sans');
+    //         $options->set('isRemoteEnabled', false);
+    //         $options->set('isHtml5ParserEnabled', true);
+    //         $options->set('isPhpEnabled', false);
+
+    //         $dompdf = new Dompdf($options);
+    //         $dompdf->loadHtml($html);
+    //         $dompdf->setPaper('A4', 'portrait');
+    //         $dompdf->render();
+
+    //         $identifiantContrat = ($paiement->typeReglement === 'firstPayment') ? $paiement->idContrat : $paiement->idproposition;
+
+    //         $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
+    //         $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
+
+    //         // Sauvegarder le PDF
+    //         file_put_contents($filePath, $dompdf->output());
+
+    //         Log::info('PDF généré avec succès pour : ' . $codePaiement);
+
+    //         if ($typeReglement === 'firstPayment') {
+
+    //             // Ajoute le reçu au contrat
+    //             TblDocument::create([
+    //                 'codecontrat' => $paiement->idContrat,
+    //                 'filename' => $fileName,
+    //                 'libelle' => 'Recu de paiement',
+    //                 'saisiele' => now(),
+    //                 'saisiepar' => $contrat->saisiepar ?? null,
+    //                 'source' => "ES",
+    //             ]);
+
+    //             // Mettre le contrat en statut "payé"
+    //             $contrat->update(['estpaye' => 1]);
+    //         }
+
+    //         return [
+    //             'status' => 'success',
+    //             'file_name' => $fileName,
+    //             'file_path' => $filePath,
+    //         ];
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Erreur génération PDF : ' . $e->getMessage());
+    //         Log::error('Stack trace: ' . $e->getTraceAsString());
+
+    //         return [
+    //             'status' => 'error',
+    //             'message' => 'Erreur lors de la génération du PDF : ' . $e->getMessage()
+    //         ];
+    //     }
+    // }
 
     /**
      * Convertit le statut Jeko en statut interne
@@ -341,6 +468,7 @@ class JekoPaymentService
             'processing' => 'pending',
             'completed' => 'success',
             'success' => 'success',
+            'succeeded' => 'success',
             'failed' => 'error',
             'cancelled' => 'cancelled',
             'refunded' => 'cancelled',

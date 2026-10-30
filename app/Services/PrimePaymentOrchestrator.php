@@ -161,62 +161,27 @@ class PrimePaymentOrchestrator
     /**
      * Enregistre tblpaiement + les lignes tblfacture associées dans une transaction.
      */
-    public function enregistrer(array $donnees, array $preparation, string $referenceInterne, array $resultatJeko, $reglementSource = 'JEKO'): TblPaiement
+    public function enregistrer(array $donnees, array $preparation, string $referenceInterne, array $resultat, string $provider = 'JEKO'): TblPaiement
     {
-        return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko, $reglementSource) {
-            // $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
-            $paiement = TblPaiement::create([
-                'codePaiement' => $referenceInterne,
-                'command_number' => $referenceInterne,
-                'montant' => $preparation['montantTotal'],
-                'etat' => 1, // en attente de confirmation webhook pour passer à 2
-                'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),
-                'payment_mode' => $donnees['paymentMethod'],
-                'payment_status' => $resultatJeko['status'] ?? 'pending',
-                'typePaiement' => 1,
-                'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? $preparation['idProposition'] : null,
-                'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : null,
-                'payment_token' => $resultatJeko['paymentId'],
-                'typeReglement' => $donnees['paymentType'],
-                'reglementSource' => $reglementSource,
-                'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? $preparation['idProposition'] : null,
-                // 'referenceSource' => $preparation['referenceSource'],
-                'nombreDePrime' => $preparation['nombreDePrimes'],
-                // 'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),
-                'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
-                'emailpayeur' => $donnees['customerEmail'] ?? null,
-                'saisiele' => Carbon::now()->format('Y-m-d H:i:s')
-            ]);
-
-            foreach ($preparation['facturesAGenerer'] as $ligne) {
-                TblFacture::create([
-                    // 'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
         try {
-            return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultatJeko) {
+            return DB::transaction(function () use ($donnees, $preparation, $referenceInterne, $resultat, $provider) {
                 // $typePaiement = $this->mapperTypePaiement($donnees['paymentType']);
                 $paiement = TblPaiement::create([
                     'codePaiement' => $referenceInterne,
                     'command_number' => $referenceInterne,
-                    'payment_token' => $resultatJeko['paymentId'] ?? null,
                     'montant' => $preparation['montantTotal'],
                     'etat' => 1, // en attente de confirmation webhook pour passer à 2
-                    'dateAjout' => Carbon::now()->format('Y-m-d H:i:s'),
-                    'typePaiement' => 1,
-                    'referenceSource' => $ligne['referenceOrigine'],
-                    'idcontrat' => $donnees['contractId'] ?? $donnees['idProposition'] ?? null,
-                    'saisiele' => Carbon::now()->format('Y-m-d H:i:s'),
                     'datepaiement' => Carbon::now()->format('Y-m-d H:i:s'),
                     'payment_mode' => $donnees['paymentMethod'],
-                    'payment_status' => $resultatJeko['status'] ?? 'pending',
+                    'payment_status' => $resultat['status'] ?? 'pending',
                     'typePaiement' => 1,
-                    'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? ($preparation['idProposition'] ?? null) : null,
-                    'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : $donnees['contractId'] ?? null,
-                    // 'typeReference' => $donnees['paymentType'],
+                    'idproposition' => ($donnees['paymentType'] !== 'firstPayment') ? $preparation['idProposition'] : null,
+                    'idContrat' => ($donnees['paymentType'] === 'firstPayment') ? $donnees['contractId'] : null,
+                    'payment_token' => $resultat['paymentId'] ?? null,
                     'typeReglement' => $donnees['paymentType'],
-                    'reglementSource' => 'JEKO',
-                    'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? ($preparation['idProposition'] ?? null) : null,
-                    // 'referenceSource' => $preparation['referenceSource'],
-                    'nombreDePrime' => $preparation['nombreDePrimes'] + ($preparation['fraisAdhesion'] == 0 ? 0 : 1),
+                    'reglementSource' => $provider,
+                    'referenceSource' => ($donnees['paymentType'] !== 'firstPayment') ? $preparation['idProposition'] : null,
+                    'nombreDePrime' => $preparation['nombreDePrimes'],
                     'frais_adhesion' => $preparation['fraisAdhesion'] ?? 0,
                     'emailpayeur' => $donnees['customerEmail'] ?? null,
                     'saisiele' => Carbon::now()->format('Y-m-d H:i:s')
@@ -224,7 +189,6 @@ class PrimePaymentOrchestrator
 
                 foreach ($preparation['facturesAGenerer'] as $ligne) {
                     TblFacture::create([
-                        // 'idProposition' => $preparation['idProposition'] ?? $preparation['contractId'] ?? null,
                         'codePaiement' => $referenceInterne,
                         'prime' => $ligne['prime'],
                         'typeFacture' => $ligne['type'],
@@ -262,10 +226,7 @@ class PrimePaymentOrchestrator
 
             if ($statut === 'success') {
                 $updateData['etat'] = 2; // Payé dans la convention APIMAINYNOV
-                // $updateData['paid_at'] = Carbon::now()->format('Y-m-d H:i:s');
                 $updateData['payment_validation_date'] = Carbon::now()->format('Y-m-d H:i:s');
-                // $updateData['paid_amount'] = $paiement->montant;
-                // $updateData['paid_sum'] = $paiement->montant;
                 $updateData['paid_amount'] = $payload['amount'];
                 $updateData['paid_sum'] = $payload['amount'];
 
@@ -273,10 +234,15 @@ class PrimePaymentOrchestrator
                     $updateData['telpaiement'] = $payload['phone'];
                 }
 
+                // Stocker le transaction_id si disponible (pour Wave)
+                // if (!empty($payload['transactionId'])) {
+                //     $updateData['transaction_id'] = $payload['transactionId'];
+                // }
+
                 Log::info('Paiement marqué comme payé', [
                     'reference' => $paiement->command_number,
                 ]);
-            } elseif ($statut === 'error' || $statut === 'cancelled') {
+            } elseif ($statut === 'error' || $statut === 'cancelled' || $statut === 'failed') {
                 $updateData['etat'] = 1; // Erreur/Annulé dans la convention APIMAINYNOV
 
                 Log::warning('Paiement marqué comme ' . $statut, [
@@ -303,18 +269,5 @@ class PrimePaymentOrchestrator
                 'count' => $updatedCount,
             ]);
         });
-    }
-
-
-    /**
-     * Convention firstPayment : 1 = earlyPayment: 2, recoveryPrime: 3.
-     */
-    private function mapperTypePaiement(string $typePaiement): int // 1 = firstPayment, 2 = earlyPayment, 3 = recoveryPrime): int
-    {
-        return match ($typePaiement) {
-            'firstPayment' => 1,
-            'earlyPayment' => 2,
-            'recoveryPrime' => 3,
-        };
     }
 }

@@ -26,12 +26,14 @@ class WaveService
     {
 
         $payload = [
-            'amount'           => 1,
-            // 'amount'           => (string) $donnees['amountCents'],
+            // 'amount'           => 1,
+            'amount'           => (string) $donnees['amountCents'],
             'currency'         => $donnees['currency'],
             'client_reference' => $referenceInterne,
-            'success_url'      => $donnees['successUrl'] ?? route('wave.retour.success', ['ref' => $referenceInterne]),
-            'error_url'        => $donnees['errorUrl']   ?? route('wave.retour.error',   ['ref' => $referenceInterne]),
+            'successUrl' => (isset($donnees['successUrl']) && !empty($donnees['successUrl'])) ? $donnees['successUrl'] : env('APP_URL') . '/paiement/recu/' . $referenceInterne,
+                'errorUrl' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error',
+            // 'success_url'      => $donnees['successUrl'] ?? route('wave.retour.success', ['ref' => $referenceInterne]),
+            // 'error_url'        => $donnees['errorUrl']   ?? route('wave.retour.error',   ['ref' => $referenceInterne]),
         ];
 
         $response = Http::withToken($this->apiKey)

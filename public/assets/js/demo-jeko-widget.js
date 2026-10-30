@@ -11,21 +11,24 @@
     // Si la page est accessible via une route spécifique, on utilise window.location.origin
     var BASE_URL = window.location.origin;
     
-    // URLs des endpoints API
+    // URLs des endpoints API UNIFIÉS (Wave + Jeko)
+    // Le backend route automatiquement vers Wave ou Jeko selon le paymentMethod
     var API_URLS = {
-        widgetJs: BASE_URL + '/api/paiements/jeko/jeko-payment-widget.js',
-        init: BASE_URL + '/api/paiements/jeko/init',
-        contractCheck: BASE_URL + '/api/paiements/jeko/contrat/verifier',
-        checkStatus: BASE_URL + '/api/paiements/jeko/statut',
+        widgetJs: BASE_URL + '/api/paiements/jeko-payment-widget.js',
+        init: BASE_URL + '/api/paiements/init',              // Route unifiée (Wave si paymentMethod='wave', Jeko sinon)
+        contractCheck: BASE_URL + '/api/paiements/contrat/verifier',  // Route partagée
+        checkStatus: BASE_URL + '/api/paiements/statut',    // Route unifiée avec routage selon provider
     };
 
     console.log('📍 Base URL détectée:', BASE_URL);
+    console.log('🔄 API URLs configurées:', API_URLS);
 
     // ============================================================
     // 1.5) FONCTION POUR VÉRIFIER LE STATUT D'UN PAIEMENT
     // ============================================================
     /**
-     * Interroge le statut d'un paiement via l'API
+     * Interroge le statut d'un paiement via l'API unifiée
+     * Le backend route automatiquement vers Wave ou Jeko selon le provider stocké
      * @param {string} referenceInterne - Référence interne du paiement
      * @returns {Promise<Object|null>} Données du statut ou null en cas d'erreur
      */
@@ -36,6 +39,7 @@
 
             if (data.success) {
                 console.log('✅ Statut du paiement:', data.data.statut);
+                console.log('📊 Provider:', data.data.details?.provider || 'Non spécifié');
                 return data.data;
             } else {
                 console.error('❌ Erreur lors de la vérification:', data.message);

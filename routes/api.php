@@ -6,17 +6,16 @@ use App\Http\Controllers\Api\CaisseController;
 use App\Http\Controllers\Api\CaisseEtatController;
 use App\Http\Controllers\Api\CaisseMouvementController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\JekoPaymentController;
 use App\Http\Controllers\Api\MotifController;
 use App\Http\Controllers\Api\OperateurController;
 use App\Http\Controllers\Api\PaiementController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\RapportCaisseController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\SmsController;
 use App\Http\Controllers\Api\SouscriptionController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\TypeOperationController;
-use App\Http\Controllers\Api\WaveController;
 use App\Http\Controllers\Api\YvonController;
 use App\Http\Controllers\Api\YvonWidgetController;
 use App\Http\Controllers\Auth\AuthController;
@@ -166,25 +165,62 @@ Route::prefix('paiement')->group(function () {
 });
 
 
-Route::prefix('/paiements/jeko')->group(function () {
-    // Initialisation du paiement
-    Route::post('/init', [JekoPaymentController::class, 'initierPaiement'])
-        ->name('api.paiements.jeko.init');
+// ============================================================
+// Routes Paiements Unifiées (Wave + Jeko)
+// ============================================================
 
-    // Vérification du statut
-    Route::get('/statut/{referenceInterne}', [JekoPaymentController::class, 'verifierStatut'])
-        ->name('api.paiements.jeko.statut');
+Route::prefix('/paiements')->group(function () {
+    // Initialisation du paiement (unifié Wave + Jeko selon paymentMethod)
+    Route::post('/init', [PaymentController::class, 'initierPaiement'])
+        ->name('api.paiements.init');
 
-    // Vérification du contrat
-    Route::post('/contrat/verifier', [JekoPaymentController::class, 'verifierContrat']);
+    // Vérification du contrat (déjà partagé)
+    Route::post('/contrat/verifier', [PaymentController::class, 'verifierContrat']);
 
-    // Widget
-    Route::get('/jeko-payment-widget.js', [JekoPaymentController::class, 'jekoPaymentWidget']);
+    // Widget (unifié)
+    Route::get('/jeko-payment-widget.js', [PaymentController::class, 'jekoPaymentWidget']);
 
-    // Webhook pour les notifications
-    Route::post('/webhook', [JekoPaymentController::class, 'webhook'])
-        ->name('api.paiements.jeko.webhook');
+    // Statut (unifié - routage selon provider)
+    Route::get('/statut/{referenceInterne}', [PaymentController::class, 'verifierStatut'])
+        ->name('api.paiements.statut');
+
+    // Webhooks séparés
+    Route::prefix('jeko')->group(function () {
+        Route::post('/webhook', [PaymentController::class, 'webhook'])
+            ->name('api.paiements.jeko.webhook');
+    });
+
+    Route::prefix('wave')->group(function () {
+        Route::post('/webhook', [PaymentController::class, 'webhookWave'])
+            ->name('api.paiements.wave.webhook');
+        // Route::get('/statut/{referenceInterne}', [PaymentController::class, 'verifierStatut'])
+        //     ->name('api.paiements.wave.statut');
+    });
 });
+
+// ============================================================
+// Anciennes routes Jeko (conservées pour compatibilité)
+// ============================================================
+
+// Route::prefix('/paiements/jeko')->group(function () {
+//     // Initialisation du paiement
+//     Route::post('/init', [OLD_JekoPaymentController::class, 'initierPaiement'])
+//         ->name('api.paiements.jeko.init');
+
+//     // Vérification du statut
+//     Route::get('/statut/{referenceInterne}', [OLD_JekoPaymentController::class, 'verifierStatut'])
+//         ->name('api.paiements.jeko.statut');
+
+//     // Vérification du contrat
+//     Route::post('/contrat/verifier', [OLD_JekoPaymentController::class, 'verifierContrat']);
+
+//     // Widget
+//     Route::get('/jeko-payment-widget.js', [OLD_JekoPaymentController::class, 'jekoPaymentWidget']);
+
+//     // Webhook pour les notifications
+//     Route::post('/webhook', [OLD_JekoPaymentController::class, 'webhook'])
+//         ->name('api.paiements.jeko.webhook');
+// });
 
 
 
@@ -344,41 +380,73 @@ Route::prefix('motif')->group(function () {
 
 
 // ============================================================
-// Routes Wave — Checkout + Webhook + Widget
+// Routes Wave — Checkout + Webhook + Widget (anciennes routes conservées)
 // ============================================================
 
-Route::prefix('wave')->name('wave.')->group(function () {
+// Route::prefix('wave')->name('wave.')->group(function () {
 
-    // Vérification de contrat
-    Route::post('/paiements/contrat/verifier', [WaveController::class, 'verifierContrat'])->name('paiements.contrat.verifier');
+//     // Vérification de contrat
+//     // Route::post('/paiements/contrat/verifier', [OLD_WaveController::class, 'verifierContrat'])->name('paiements.contrat.verifier');
 
-    // Liste des factures impayées d'un contrat
-    Route::post('/factures/contrat', [WaveController::class, 'afficherFactureImpayer'])->name('factures.contrat');
+//     // Liste des factures impayées d'un contrat
+//     // Route::post('/factures/contrat', [OLD_WaveController::class, 'afficherFactureImpayer'])->name('factures.contrat');
 
-    // Initialisation du paiement (widget)
-    Route::post('/paiements/init', [WaveController::class, 'initierPaiement'])->name('api.paiements.wave.init');
+//     // Initialisation du paiement (widget)
+//     Route::post('/paiements/init', [OLD_WaveController::class, 'initierPaiement'])->name('api.paiements.wave.init');
 
-    // Webhook Wave
-    Route::post('/webhook', [WaveController::class, 'webhook'])->name('webhook');
+//     // Webhook Wave
+//     Route::post('/webhook', [OLD_WaveController::class, 'webhook'])->name('webhook');
 
-    // Retours après paiement
-    Route::get('/paiements/retour/success', [WaveController::class, 'retourSuccess'])->name('retour.success');
+//     // Retours après paiement
+//     Route::get('/paiements/retour/success', [OLD_WaveController::class, 'retourSuccess'])->name('retour.success');
 
-    Route::get('/paiements/retour/error', [WaveController::class, 'retourError'])->name('retour.error');
+//     Route::get('/paiements/retour/error', [OLD_WaveController::class, 'retourError'])->name('retour.error');
 
-    // Vérification de statut
-    Route::get('/statut/{referenceInterne}', [WaveController::class, 'verifierStatut'])->name('statut');
+//     // Vérification de statut
+//     Route::get('/statut/{referenceInterne}', [OLD_WaveController::class, 'verifierStatut'])->name('statut');
 
-    // Paiement direct via URL
-    Route::get('/directpay/{identifiant}/{montant}', [WaveController::class, 'payerDirect'])->where('montant', '[0-9]+')->name('payer.direct');
+//     // Paiement direct via URL
+//     // Route::get('/directpay/{identifiant}/{montant}', [OLD_WaveController::class, 'payerDirect'])->where('montant', '[0-9]+')->name('payer.direct');
 
-    // Service du widget JS
-    Route::get('/wave-payment-widget.js', [WaveController::class, 'wavePaymentWidget'])->name('widget');
+//     // Service du widget JS
+//     // Route::get('/wave-payment-widget.js', [OLD_WaveController::class, 'wavePaymentWidget'])->name('widget');
 
-    Route::get('/factures/{identifiant}', [WaveController::class, 'facturesDirect'])
-        ->where('identifiant', '[A-Za-z0-9\-_]+')
-        ->name('factures.direct');
-});
+//     // Route::get('/factures/{identifiant}', [OLD_WaveController::class, 'facturesDirect'])
+//     //     ->where('identifiant', '[A-Za-z0-9\-_]+')
+//     //     ->name('factures.direct');
+// });
+// Route::prefix('wave')->name('wave.')->group(function () {
+
+//     // Vérification de contrat
+//     Route::post('/paiements/contrat/verifier', [WaveController::class, 'verifierContrat'])->name('paiements.contrat.verifier');
+
+//     // Liste des factures impayées d'un contrat
+//     Route::post('/factures/contrat', [WaveController::class, 'afficherFactureImpayer'])->name('factures.contrat');
+
+//     // Initialisation du paiement (widget)
+//     Route::post('/paiements/init', [WaveController::class, 'initierPaiement'])->name('api.paiements.wave.init');
+
+//     // Webhook Wave
+//     Route::post('/webhook', [WaveController::class, 'webhook'])->name('webhook');
+
+//     // Retours après paiement
+//     Route::get('/paiements/retour/success', [WaveController::class, 'retourSuccess'])->name('retour.success');
+
+//     Route::get('/paiements/retour/error', [WaveController::class, 'retourError'])->name('retour.error');
+
+//     // Vérification de statut
+//     Route::get('/statut/{referenceInterne}', [WaveController::class, 'verifierStatut'])->name('statut');
+
+//     // Paiement direct via URL
+//     Route::get('/directpay/{identifiant}/{montant}', [WaveController::class, 'payerDirect'])->where('montant', '[0-9]+')->name('payer.direct');
+
+//     // Service du widget JS
+//     Route::get('/wave-payment-widget.js', [WaveController::class, 'wavePaymentWidget'])->name('widget');
+
+//     Route::get('/factures/{identifiant}', [WaveController::class, 'facturesDirect'])
+//         ->where('identifiant', '[A-Za-z0-9\-_]+')
+//         ->name('factures.direct');
+// });
 
 
 // Debug des URLs générées (à retirer en prod)

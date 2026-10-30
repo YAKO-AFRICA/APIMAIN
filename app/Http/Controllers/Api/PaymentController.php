@@ -178,7 +178,7 @@ class PaymentController extends Controller
                 'reference' => $referenceInterne,
                 'paymentMethod' => $paymentMethod,
                 'successUrl' => (isset($donnees['successUrl']) && !empty($donnees['successUrl'])) ? $donnees['successUrl'] : env('APP_URL') . '/paiement/recu/' . $referenceInterne,
-                'errorUrl' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error',
+                'errorUrl' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error/' . $referenceInterne,
                 'customerEmail' => $donnees['customerEmail'] ?? null,
                 'customerName' => $donnees['customerName'] ?? null,
                 'description' => $donnees['description'] ?? null,

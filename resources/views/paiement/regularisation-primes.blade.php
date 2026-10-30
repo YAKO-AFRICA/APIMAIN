@@ -560,7 +560,7 @@
                     customerName: "Client",
                     successUrl: successUrl,
                     // successUrl: window.location.origin + "/paiements/jeko/success",
-                    errorUrl: "{{ url('/paiement/error') }}",
+                    errorUrl: "{{ url('/paiement/error') }}" + "/" + referenceInterne,
                     metadata: {
                         source: "sms_link",
                         scenario: "recoveryPrime",

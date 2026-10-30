@@ -141,7 +141,7 @@
         <div class="info-box">
             <div class="info-item">
                 <span class="info-label">Référence</span>
-                <span class="info-value">{{ request()->get('reference') ?? 'N/A' }}</span>
+                <span class="info-value">{{ $referenceInterne ?? 'N/A' }}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">Date</span>

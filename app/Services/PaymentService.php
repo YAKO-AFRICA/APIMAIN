@@ -60,11 +60,12 @@ class PaymentService
     protected function initialiserPaiementWave(array $donnees, string $referenceInterne): array
     {
         $payload = [
-            'amount' => (string) $donnees['amountCents'],
+            'amount' => 2,
+            // 'amount' => $donnees['amountCents'],
             'currency' => $donnees['currency'],
             'client_reference' => $referenceInterne,
             'success_url' => (isset($donnees['successUrl']) && !empty($donnees['successUrl'])) ? $donnees['successUrl'] : env('APP_URL') . '/paiement/recu/' . $referenceInterne,
-            'error_url' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error',
+            'error_url' => (isset($donnees['errorUrl']) && !empty($donnees['errorUrl'])) ? $donnees['errorUrl'] : env('APP_URL') . '/paiement/error/' . $referenceInterne,
         ];
 
         $response = Http::withToken($this->waveApiKey)
@@ -105,15 +106,16 @@ class PaymentService
     {
         $corpsRequete = [
             'storeId' => $this->jekoStoreId,
-            'amountCents' => $donnees['amountCents'],
+            'amountCents' => 200,
+            // 'amountCents' => $donnees['amountCents'],
             'currency' => $donnees['currency'] ?? 'XOF',
             'reference' => $referenceInterne,
             'paymentDetails' => [
                 'type' => 'redirect',
                 'data' => [
                     'paymentMethod' => $donnees['paymentMethod'],
-                    'successUrl' => $donnees['successUrl'] ?? null,
-                    'errorUrl' => $donnees['errorUrl'] ?? null,
+                    'successUrl' => $donnees['successUrl'] ?? env('APP_URL') . '/paiement/recu/' . $referenceInterne,
+                    'errorUrl' => $donnees['errorUrl'] ?? env('APP_URL') . '/paiement/error/' . $referenceInterne,
                     'payerPhone' => $donnees['payerPhone'] ?? null,
                 ],
             ],

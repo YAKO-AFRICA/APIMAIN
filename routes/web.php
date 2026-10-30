@@ -44,8 +44,8 @@ Route::get('/recu/{referenceInterne}/pdf', [ReceiptController::class, 'downloadP
 Route::get('/paiement/regularisation-primes', function () {
     return view('paiement.regularisation-primes');
 })->name('paiement.regularisation-primes');
-Route::get('/paiement/error', function () {
-    return view('paiement.jeko-error');
+Route::get('/paiement/error/{referenceInterne}', function () {
+    return view('paiement.jeko-error', ['referenceInterne' => request()->route('referenceInterne')]);
 })->name('paiement.error');
 
 

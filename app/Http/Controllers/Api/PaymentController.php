@@ -364,7 +364,7 @@ class PaymentController extends Controller
             );
 
             // Si le paiement est réussi, générer le reçu
-            if ($resultat['status'] === 'success') {
+            if ($resultat['status'] === 'success' && $paiement->typeReglement === 'firstPayment') {
                 $facturePdf = $this->paymentService->generateReceipt($paiement->codePaiement, $paiement->typeReglement);
                 if ($facturePdf['status'] === 'error') {
                     Log::error('Erreur génération PDF reçu', [
@@ -478,9 +478,8 @@ class PaymentController extends Controller
                     'reponse_webhook' => ['webhook' => $event, 'date_maj' => now()],
                 ]
             );
-
             // Si le paiement est réussi, générer le reçu
-            if ($status === 'success') {
+            if ($status === 'success' && $paiement->typeReglement === 'firstPayment') {
                 $facturePdf = $this->paymentService->generateReceipt($paiement->codePaiement, $paiement->typeReglement);
                 if ($facturePdf['status'] === 'error') {
                     Log::error('Erreur génération PDF reçu Wave', [

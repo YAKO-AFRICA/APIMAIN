@@ -213,30 +213,6 @@ class PaymentService
             $status = strtolower((string) ($data['payment_status'] ?? ''));
             $status = $this->convertirStatut($status ?? 'pending');
 
-            // if (in_array($status, ['succeeded', 'failed', 'cancelled'], true)) {
-            //     $status = $this->convertirStatut($status);
-
-            //     $paiement->payment_status = $status;
-
-            //     if ($status === 'success') {
-            //         $paiement->etat = 2;
-            //         $paiement->payment_validation_date = $paiement->payment_validation_date
-            //             ?? now()->format('Y-m-d H:i:s');
-
-            //         if (isset($data['amount']) && is_numeric($data['amount'])) {
-            //             $paiement->paid_sum = (int) $data['amount'];
-            //             $paiement->paid_amount = (int) $data['amount'];
-            //         }
-            //     }
-
-            //     $paiement->save();
-
-            //     if ($status === 'success') {
-            //         TblFacture::where('codePaiement', $paiement->codePaiement)
-            //             ->update(['etat' => 2]);
-            //     }
-            // }
-
             return [
                 'success' => true,
                 'status' => $status,
@@ -330,30 +306,6 @@ class PaymentService
 
         return $response->json();
     }
-
-    
-
-    /**
-     * Valide le webhook Jeko
-     */
-    // public function validerWebhookJeko(Request $request): bool
-    // {
-    //     $signature = $request->header('X-Signature', '');
-    //     $timestamp = $request->header('X-Timestamp', '');
-    //     $payload = $request->getContent();
-
-    //     if (empty($signature) || empty($timestamp) || empty($this->jekoWebhookSecret)) {
-    //         return false;
-    //     }
-
-    //     // Vérifier anti-replay (5 minutes)
-    //     if (abs(time() - (int) $timestamp) > 300) {
-    //         return false;
-    //     }
-
-    //     $expected = hash_hmac('sha256', $timestamp . $payload, $this->jekoWebhookSecret);
-    //     return hash_equals($expected, $signature);
-    // }
 
     public function validerWebhookJeko(Request $request): bool
     {

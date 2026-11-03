@@ -82,7 +82,7 @@ class ReceiptController extends Controller
     }
 
     /**
-     * Génère et télécharge le PDF du reçu
+     * Génère et télécharge le PDF du reçu sans stockage
      */
     public function download(string $referenceInterne)
     {
@@ -90,25 +90,17 @@ class ReceiptController extends Controller
             ->orWhere('command_number', $referenceInterne)
             ->firstOrFail();
 
-        // Vérifier si le PDF existe déjà
+        // Générer le PDF à la volée sans stockage
+        $pdf = $this->generatePdf($paiement);
+        
         $identifiantContrat = $paiement->idContrat ?? $paiement->idproposition ?? '';
         $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
-        $externalUploadDir = base_path(env('UPLOADS_PATH'));
-        $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
-
-        if (file_exists($filePath)) {
-            return response()->download($filePath, $fileName, [
-                'Content-Type' => 'application/pdf',
-            ]);
-        }
-
-        // Générer le PDF si inexistant
-        $pdf = $this->generatePdf($paiement);
+        
         return $pdf->download($fileName);
     }
 
     /**
-     * Génère le PDF du reçu
+     * Génère le PDF du reçu (sans stockage)
      */
     private function generatePdf(TblPaiement $paiement)
     {
@@ -145,26 +137,6 @@ class ReceiptController extends Controller
         $pdf = Pdf::loadView('paiement.recu_pdf', $data);
         $pdf->setPaper('A4', 'portrait');
 
-        // Sauvegarder le PDF
-        $identifiantContrat = $paiement->idContrat ?? $paiement->idproposition ?? '';
-        $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
-        $externalUploadDir = base_path(env('UPLOADS_PATH'));
-        $filePath = $externalUploadDir . DIRECTORY_SEPARATOR . $fileName;
-
-        if (!is_dir($externalUploadDir)) {
-            mkdir($externalUploadDir, 0777, true);
-        }
-
-        file_put_contents($filePath, $pdf->output());
-
         return $pdf;
-    }
-
-    /**
-     * Télécharge le PDF du reçu (méthode alternative pour la route existante)
-     */
-    public function downloadPDF(string $referenceInterne)
-    {
-        return $this->download($referenceInterne);
     }
 }

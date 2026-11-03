@@ -40,7 +40,7 @@ Route::get('storage/documents/{file}', function ($file) {
 
 Route::get('/', [PaymentController::class, 'demoJekoWidget'])->name('demo-jeko-widget');
 Route::get('/paiement/recu/{referenceInterne}', [ReceiptController::class, 'show'])->name('paiement.recu');
-Route::get('/recu/{referenceInterne}/pdf', [ReceiptController::class, 'downloadPDF'])->name('receipt.download.pdf');
+Route::get('/paiement/recu/{referenceInterne}/download', [ReceiptController::class, 'download'])->name('paiement.recu.download');
 Route::get('/paiement/regularisation-primes', function () {
     return view('paiement.regularisation-primes');
 })->name('paiement.regularisation-primes');

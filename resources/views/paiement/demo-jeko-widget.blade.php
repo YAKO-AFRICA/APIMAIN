@@ -450,6 +450,107 @@
         </div>
 
         <!-- ============================================================
+        LIEN POUR LES CLIENTS - RÉGULARISATION DES PRIMES
+        ============================================================ -->
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; border: 1px solid #bbf7d0;">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+                <div style="font-size: 32px;">📋</div>
+                <div style="flex: 1;">
+                    <h3 style="font-size: 16px; font-weight: 700; color: #166534; margin: 0 0 8px;">Régularisation de vos factures impayées</h3>
+                    <p style="font-size: 13px; color: #374151; margin: 0 0 12px; line-height: 1.6;">
+                        Vous avez des factures en attente de paiement ? Entrez votre numéro de contrat ci-dessous pour générer le lien de régularisation.
+                        Copiez ce lien et envoyez-le à votre client pour qu'il puisse régulariser ses factures impayées.
+                    </p>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                        <input type="text" 
+                               id="clientContractId" 
+                               placeholder="Numéro de contrat (ex: 82718)" 
+                               value="82718"
+                               style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid #bbf7d0; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"
+                               onfocus="this.style.borderColor='#166534'"
+                               onblur="this.style.borderColor='#bbf7d0'"
+                               oninput="updateRegularisationLink()" />
+                        <button onclick="updateRegularisationLink()" 
+                                style="padding: 10px 20px; background: #166534; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                            Générer le lien
+                        </button>
+                    </div>
+                    <div style="background: #fff; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 12px; display: flex; gap: 12px; align-items: center;">
+                        <input type="text" 
+                               id="generatedLink" 
+                               readonly 
+                               value=""
+                               style="flex: 1; padding: 8px 12px; border: none; background: transparent; font-size: 12px; color: #374151; outline: none;" />
+                        <button onclick="copyRegularisationLink()" 
+                                id="copyBtn"
+                                style="padding: 8px 16px; background: #166534; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                            📋 Copier
+                        </button>
+                        <a href="#" 
+                           id="openLink"
+                           target="_blank"
+                           style="padding: 8px 16px; background: #166534; color: #fff; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600; transition: all 0.2s;">
+                            🔗 Ouvrir
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #bbf7d0;">
+                <p style="font-size: 12px; color: #4b5563; margin: 0;">
+                    <strong>💡 Comment ça marche ?</strong> Entrez le numéro de contrat du client, cliquez sur "Générer le lien", puis copiez ou ouvrez le lien. Le client pourra sélectionner ses factures à payer et choisir son moyen de paiement (Wave, Orange Money, Moov, MTN, Djamo, Visa, Mastercard).
+                </p>
+            </div>
+        </div>
+
+        @endverbatim
+
+        <script>
+            function updateRegularisationLink() {
+                const contractId = document.getElementById('clientContractId').value;
+                const baseUrl = window.location.origin + '/paiement/regularisation-primes';
+                const generatedLink = document.getElementById('generatedLink');
+                const openLink = document.getElementById('openLink');
+                
+                if (contractId) {
+                    const fullUrl = baseUrl + '?contract=' + contractId;
+                    generatedLink.value = fullUrl;
+                    openLink.href = fullUrl;
+                } else {
+                    generatedLink.value = baseUrl;
+                    openLink.href = baseUrl;
+                }
+            }
+
+            function copyRegularisationLink() {
+                const generatedLink = document.getElementById('generatedLink');
+                const copyBtn = document.getElementById('copyBtn');
+                
+                generatedLink.select();
+                generatedLink.setSelectionRange(0, 99999);
+                
+                navigator.clipboard.writeText(generatedLink.value).then(function() {
+                    copyBtn.textContent = '✓ Copié !';
+                    setTimeout(function() {
+                        copyBtn.textContent = '📋 Copier';
+                    }, 2000);
+                }).catch(function() {
+                    // Fallback
+                    copyBtn.textContent = 'Erreur';
+                    setTimeout(function() {
+                        copyBtn.textContent = '📋 Copier';
+                    }, 2000);
+                });
+            }
+
+            // Initialiser le lien au chargement
+            document.addEventListener('DOMContentLoaded', function() {
+                updateRegularisationLink();
+            });
+        </script>
+
+        @verbatim
+
+        <!-- ============================================================
         DÉMO DU WIDGET
         ============================================================ -->
         <div class="demo-section">
@@ -550,8 +651,8 @@
             </div>
 
             <!-- ============================================================
-TAB 1: HTML / Vanilla JS - Version complète avec 3 types
-============================================================ -->
+        TAB 1: HTML / Vanilla JS - Version complète avec 3 types
+        ============================================================ -->
             <div class="tab-content active" id="tab-html">
                 <p class="code-description">
                     Intégration simple dans une page HTML classique avec les 3 types de paiement.

@@ -184,11 +184,17 @@ Route::prefix('/paiements')->group(function () {
     Route::get('/statut/{referenceInterne}', [PaymentController::class, 'verifierStatut'])
         ->name('api.paiements.statut');
 
+
+    // https://apimaintest.yakoafricassur.com/api/paiements/jeko/webhook
     // Webhooks séparés
     Route::prefix('jeko')->group(function () {
         Route::post('/webhook', [PaymentController::class, 'webhook'])
             ->name('api.paiements.jeko.webhook');
     });
+
+
+
+    // https://apimaintest.yakoafricassur.com/api/paiements/wave/webhook
 
     Route::prefix('wave')->group(function () {
         Route::post('/webhook', [PaymentController::class, 'webhookWave'])
@@ -198,29 +204,6 @@ Route::prefix('/paiements')->group(function () {
     });
 });
 
-// ============================================================
-// Anciennes routes Jeko (conservées pour compatibilité)
-// ============================================================
-
-// Route::prefix('/paiements/jeko')->group(function () {
-//     // Initialisation du paiement
-//     Route::post('/init', [OLD_JekoPaymentController::class, 'initierPaiement'])
-//         ->name('api.paiements.jeko.init');
-
-//     // Vérification du statut
-//     Route::get('/statut/{referenceInterne}', [OLD_JekoPaymentController::class, 'verifierStatut'])
-//         ->name('api.paiements.jeko.statut');
-
-//     // Vérification du contrat
-//     Route::post('/contrat/verifier', [OLD_JekoPaymentController::class, 'verifierContrat']);
-
-//     // Widget
-//     Route::get('/jeko-payment-widget.js', [OLD_JekoPaymentController::class, 'jekoPaymentWidget']);
-
-//     // Webhook pour les notifications
-//     Route::post('/webhook', [OLD_JekoPaymentController::class, 'webhook'])
-//         ->name('api.paiements.jeko.webhook');
-// });
 
 
 

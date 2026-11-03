@@ -25,6 +25,8 @@ class WaveController extends Controller
         'recoveryPrime',
     ];
 
+
+    
     private const DEVISES_SUPPORTEES = ['XOF'];
 
     public function __construct(

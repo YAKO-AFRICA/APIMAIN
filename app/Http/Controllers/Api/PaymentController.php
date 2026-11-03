@@ -10,6 +10,7 @@ use App\Services\PrimePaymentOrchestrator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -41,6 +42,14 @@ class PaymentController extends Controller
 
     public function demoJekoWidget()
     {
+
+        // $response = Http::withHeaders([
+        //     'X-API-KEY' => config('services.jeko.api_key'),
+        //     'X-API-KEY-ID' => config('services.jeko.api_key_id'),
+        // ])->get('https://api.jeko.africa/partner_api/stores');
+
+        // $data = $response->json();
+        // Log::info('Réponse de l\'API Jeko pour la liste des stores', ['data' => $data]);
         return view('paiement.demo-jeko-widget');
     }
 
@@ -312,7 +321,8 @@ class PaymentController extends Controller
 
         try {
             // Valider le webhook
-            if (!$this->paymentService->validerWebhookJeko($request)) {
+            $validerSignature = $this->paymentService->validerWebhookJeko($request);
+            if (!$validerSignature) {
                 Log::warning('Webhook Jeko non valide - signature incorrecte');
                 return response()->json(['error' => 'Invalid webhook'], 401);
             }

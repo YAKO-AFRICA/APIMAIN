@@ -15,29 +15,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 
-//      * Contrôleur proxy pour l'API de paiement Jeko.
-//      *
-//      * Le widget frontend (jeko-widget.js) n'appelle JAMAIS l'API Jeko
-//      * directement : il envoie les données de paiement ici, et c'est ce
-//      * contrôleur qui ajoute les clés secrètes (stockées dans .env) avant
-//      * d'appeler https://api.jeko.africa côté serveur.
-//      *
-//      * Config attendue dans .env :
-//      *   JEKO_BASE_URL=https://api.jeko.africa
-//      *   JEKO_STORE_ID=xxxxx
-//      *   JEKO_PARTNER_API_KEY=xxxxx
-//      *   JEKO_PARTNER_API_KEY_ID=xxxxx
-//      *
-//      * Et dans config/services.php :
-//      *   'jeko' => [
-//      *       'base_url' => env('JEKO_BASE_URL'),
-//      *       'store_id' => env('JEKO_STORE_ID'),
-//      *       'api_key' => env('JEKO_PARTNER_API_KEY'),
-//      *       'api_key_id' => env('JEKO_PARTNER_API_KEY_ID'),
-//      *   ],
-//      */
-
-
 class  JekoPaymentController extends Controller
 {
     private const METHODES_AUTORISEES = [

@@ -150,7 +150,7 @@
         </div>
 
         <a href="javascript:history.back()" class="btn-primary">Réessayer le paiement</a>
-        <a href="/" class="btn-secondary">Retour à l'accueil</a>
+        <a href="javascript:history.back()" class="btn-secondary">Retour à l'accueil</a>
     </div>
 </body>
 </html>

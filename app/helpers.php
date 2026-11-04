@@ -15,8 +15,7 @@ if (!function_exists('Refgenerate')) {
                 $query->withTrashed();
             }
 
-            
-
+        
             // Rechercher le numéro le plus élevé existant
             $numbers = $query
                 ->where($key, 'like', $prefix . '-%')

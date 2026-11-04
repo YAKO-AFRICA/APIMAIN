@@ -190,6 +190,7 @@ class PrimePaymentOrchestrator
                 foreach ($preparation['facturesAGenerer'] as $ligne) {
                     TblFacture::create([
                         'codePaiement' => $referenceInterne,
+                        'idProposition' => $ligne['referenceOrigine'] ?? null,
                         'prime' => $ligne['prime'],
                         'typeFacture' => $ligne['type'],
                         'etat' => 1, // en attente de confirmation webhook pour passer à 2

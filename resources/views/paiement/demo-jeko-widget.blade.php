@@ -512,7 +512,7 @@
                 const openLink = document.getElementById('openLink');
                 
                 if (contractId) {
-                    const fullUrl = baseUrl + '?contract=' + contractId;
+                    const fullUrl = baseUrl + '?id=' + contractId;
                     generatedLink.value = fullUrl;
                     openLink.href = fullUrl;
                 } else {

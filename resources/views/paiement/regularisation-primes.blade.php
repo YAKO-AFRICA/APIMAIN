@@ -288,7 +288,7 @@
     <script>
         // Récupérer les paramètres de l'URL
         const urlParams = new URLSearchParams(window.location.search);
-        const contractId = urlParams.get('contract');
+        const contractId = urlParams.get('id');
 
         const BASE_URL = window.location.origin;
         const API_URLS = {

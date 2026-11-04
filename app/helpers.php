@@ -3,48 +3,6 @@
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 if (!function_exists('Refgenerate')) {
-        // function Refgenerate($table, $prefix, $key)
-        // {
-        //     $latest = $table::orderBy('created_at', 'desc')->first();
-        //     if (!$latest || !isset($latest->$key)) {
-        //         return $prefix . '-00001';
-        //     }
-
-        //     $number = preg_replace("/[^0-9]/", '', $latest->$key);
-
-        //     if (empty($number)) {
-        //         $number = 0;
-        //     }
-
-        //     return $prefix . '-' . sprintf('%05d', $number + 1);
-        // }
-
-        // function Refgenerate($table, $prefix, $key)
-        // {
-        //     // Récupérer le plus grand numéro existant
-        //     $latest = $table::where($key, 'like', $prefix . '-%')
-        //         ->select($key)
-        //         ->get()
-        //         ->map(function ($item) use ($key) {
-        //             return (int) preg_replace(
-        //                 '/\D/',
-        //                 '',
-        //                 $item->$key
-        //             );
-        //         })
-        //         ->max() ?? 0;
-
-        //     $number = $latest + 1;
-
-        //     // Vérifier que le code n'existe pas déjà
-        //     do {
-        //         $reference = $prefix . '-' . sprintf('%05d', $number);
-        //         $number++;
-        //     } while ($table::where($key, $reference)->exists());
-
-        //     return $reference;
-        // }
-
         function Refgenerate($model, $prefix, $key)
         {
             $query = $model::query();

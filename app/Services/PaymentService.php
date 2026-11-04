@@ -61,8 +61,8 @@ class PaymentService
     protected function initialiserPaiementWave(array $donnees, string $referenceInterne): array
     {
         $payload = [
-            'amount' => 2,
-            // 'amount' => $donnees['amountCents'],
+            // 'amount' => 2,
+            'amount' => $donnees['amountCents'],
             'currency' => $donnees['currency'],
             'client_reference' => $referenceInterne,
             'success_url' => (isset($donnees['successUrl']) && !empty($donnees['successUrl'])) ? $donnees['successUrl'] : env('APP_URL') . '/paiement/recu/' . $referenceInterne,
@@ -107,8 +107,7 @@ class PaymentService
     {
         $corpsRequete = [
             'storeId' => $this->jekoStoreId,
-            'amountCents' => 200,
-            // 'amountCents' => $donnees['amountCents'],
+            'amountCents' => $donnees['amountCents'],
             'currency' => $donnees['currency'] ?? 'XOF',
             'reference' => $referenceInterne,
             'paymentDetails' => [

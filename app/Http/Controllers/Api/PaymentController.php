@@ -61,8 +61,15 @@ class PaymentController extends Controller
             abort(404);
         }
 
-        return response(File::get($path), 200)
-            ->header('Content-Type', 'application/javascript');
+        $content = File::get($path);
+
+        // Injecter l'APP_URL dans le widget pour le logo
+        $appUrl = config('app.url');
+        $content = str_replace('__APP_URL__', $appUrl, $content);
+
+        return response($content, 200)
+            ->header('Content-Type', 'application/javascript')
+            ->header('Cache-Control', 'public, max-age=3600');
     }
 
     /**

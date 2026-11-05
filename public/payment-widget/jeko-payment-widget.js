@@ -115,6 +115,10 @@
         errorUrl: null,
         timeout: 30000,
         headers: {},
+        // URL de base de l'application (injectée par le serveur via __APP_URL__)
+        appUrl: "__APP_URL__",
+        // URL du logo (optionnel, utilise un chemin relatif par défaut)
+        logoUrl: null,
         // Déclenche automatiquement la vérification du contrat à
         // l'ouverture du widget si un contractId est déjà fourni
         // (pour earlyPayment et recoveryPrime). Toujours actif pour
@@ -767,11 +771,14 @@
 
         _shellTemplate() {
             const t = this.options.translations;
+            // URL de base injectée par le serveur (APP_URL) ou fallback sur script origin
+            const appUrl = this.options.appUrl || (document.currentScript ? new URL(document.currentScript.src).origin : window.location.origin);
+            const logoUrl = this.options.logoUrl || appUrl + "/assets/images/ynov-logo.jpg";
             return `
         <div class="jeko-header">
           <div class="jeko-header-top">
             <div class="jeko-header-title">
-              <img src="/assets/images/ynov-logo.jpg" alt="Logo" class="jeko-logo" />
+              <img src="${logoUrl}" alt="Logo" class="jeko-logo" />
               <h3>${t.title}</h3>
             </div>
             <button type="button" class="jeko-close" aria-label="${t.close}">&times;</button>
@@ -878,12 +885,15 @@
             const body = this._modal.querySelector('[data-role="body"]');
             const footer = this._modal.querySelector('[data-role="footer"]');
             const header = this._modal.querySelector(".jeko-header");
+            // URL de base injectée par le serveur (APP_URL) ou fallback sur script origin
+            const appUrl = this.options.appUrl || (document.currentScript ? new URL(document.currentScript.src).origin : window.location.origin);
+            const logoUrl = this.options.logoUrl || appUrl + "/assets/images/ynov-logo.jpg";
             body.innerHTML = this._stepBodyTemplate();
             footer.innerHTML = this._footerTemplate();
             header.innerHTML = `
         <div class="jeko-header-top">
           <div class="jeko-header-title">
-            <img src="/assets/images/ynov-logo.jpg" alt="Logo" class="jeko-logo" />
+            <img src="${logoUrl}" alt="Logo" class="jeko-logo" />
             <h3>${this.options.translations.title}</h3>
           </div>
           <button type="button" class="jeko-close" aria-label="${this.options.translations.close}">&times;</button>

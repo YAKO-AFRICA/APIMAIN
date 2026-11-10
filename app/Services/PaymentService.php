@@ -519,7 +519,8 @@ class PaymentService
             $dompdf->render();
 
             $identifiantContrat = $paiement->idContrat ?? $paiement->idproposition;
-            $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
+            $fileName = 'recu-' . date('YmdHis') . '-' . $identifiantContrat . '.pdf';
+            // $fileName = 'recu-paiement-' . $paiement->codePaiement . '-' . $identifiantContrat . '.pdf';
 
             $tempPath = tempnam(sys_get_temp_dir(), 'pdf_');
             file_put_contents($tempPath, $dompdf->output());

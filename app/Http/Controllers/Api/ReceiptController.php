@@ -76,7 +76,7 @@ class ReceiptController extends Controller
             'paiement' => $paiement,
             'factures' => $factures,
             'libelleType' => $libellesType[$paiement->typeReglement] ?? $paiement->typeReglement,
-            'fileName' => $fileName,
+            // 'fileName' => $fileName,
             'identifiantContrat' => $identifiantContrat,
         ]);
     }
